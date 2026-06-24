@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tailwind Breakpoint Heatmap Inspector</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f4;
+      --bg-tertiary: #eeede8;
+      --bg-success: #eaf3de;
+      --bg-warning: #faeeda;
+      --bg-danger: #fcebeb;
+      --text-primary: #1a1a18;
+      --text-secondary: #5f5e5a;
+      --text-tertiary: #888780;
+      --text-success: #27500a;
+      --text-warning: #633806;
+      --text-danger: #791f1f;
+      --border: rgba(26,26,24,0.12);
+      --border-md: rgba(26,26,24,0.22);
+      --border-hover: rgba(26,26,24,0.3);
+      --border-success: rgba(63,109,17,0.3);
+      --border-warning: rgba(186,117,23,0.35);
+      --border-danger: rgba(162,45,45,0.3);
+      --radius-sm: 5px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #2a2a28;
+      --bg-tertiary: #222220;
+      --bg-success: #173404;
+      --bg-warning: #412402;
+      --bg-danger: #501313;
+      --text-primary: #f0efe9;
+      --text-secondary: #b4b2a9;
+      --text-tertiary: #888780;
+      --text-success: #C0DD97;
+      --text-warning: #fac775;
+      --text-danger: #F09595;
+      --border: rgba(240,239,233,0.10);
+      --border-md: rgba(240,239,233,0.18);
+      --border-hover: rgba(240,239,233,0.28);
+      --border-success: rgba(192,221,151,0.25);
+      --border-warning: rgba(250,199,117,0.3);
+      --border-danger: rgba(240,149,149,0.25);
+    }
+
+    html, body { font-family: var(--font-sans); background: var(--bg-tertiary); color: var(--text-primary); font-size: 16px; line-height: 1.6; min-height: 100vh; transition: background 0.2s, color 0.2s; }
+
+    /* --- Header --- */
+    .app-header { background: var(--bg-primary); border-bottom: 0.5px solid var(--border-md); padding: 13px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .logo { width: 30px; height: 30px; background: #378ADD; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; flex-shrink: 0; }
+    .app-header h1 { font-size: 15px; font-weight: 500; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .header-right span { font-size: 12px; color: var(--text-tertiary); }
+
+    /* --- Layout --- */
+    .container { max-width: 960px; margin: 0 auto; padding: 28px 20px; }
+
+    /* --- Cards --- */
+    .card { background: var(--bg-primary); border: 0.5px solid var(--border-md); border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 18px; }
+    .card-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; color: var(--text-primary); }
+
+    /* --- Buttons --- */
+    button { cursor: pointer; border: 0.5px solid var(--border-hover); border-radius: var(--radius-md); padding: 7px 16px; font-size: 13px; font-weight: 500; background: transparent; color: var(--text-primary); font-family: var(--font-sans); transition: background 0.12s, opacity 0.12s; display: inline-flex; align-items: center; gap: 6px; }
+    button:hover { background: var(--bg-secondary); }
+    button:active { transform: scale(0.98); }
+    .btn-primary { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
+    .btn-primary:hover { opacity: 0.82; background: var(--text-primary); }
+    .btn-icon { padding: 7px 10px; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+    /* --- Textarea / Drop Zone --- */
+    .drop-zone { border: 1.5px dashed var(--border-hover); border-radius: var(--radius-md); padding: 3px; background: var(--bg-secondary); transition: border-color 0.15s, background 0.15s; }
+    .drop-zone.drag-over { border-color: #378ADD; background: #e6f1fb22; }
+    textarea { font-family: var(--font-mono); font-size: 12.5px; width: 100%; min-height: 150px; resize: vertical; border: none; border-radius: calc(var(--radius-md) - 2px); padding: 12px 14px; background: transparent; color: var(--text-primary); line-height: 1.6; outline: none; display: block; }
+    .drop-hint { text-align: center; font-size: 12px; color: var(--text-tertiary); padding: 6px 0 4px; pointer-events: none; }
+
+    /* --- Input row --- */
+    .input-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5; }
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+    .kbd-hint { font-size: 11px; color: var(--text-tertiary); margin-left: auto; }
+    kbd { background: var(--bg-secondary); border: 0.5px solid var(--border-hover); border-radius: 4px; padding: 1px 6px; font-size: 11px; font-family: var(--font-mono); }
+
+    /* --- Filter bar --- */
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-bar label { font-size: 12px; color: var(--text-tertiary); }
+    select { font-family: var(--font-sans); font-size: 12px; padding: 5px 10px; border: 0.5px solid var(--border-hover); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); outline: none; cursor: pointer; }
+    select:hover { background: var(--bg-secondary); }
+    .filter-sep { flex: 1; }
+    .badge-count { font-size: 11px; background: var(--bg-secondary); border: 0.5px solid var(--border); border-radius: 20px; padding: 2px 9px; color: var(--text-tertiary); }
+
+    /* --- Metrics --- */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 18px; }
+    .metric { background: var(--bg-primary); border: 0.5px solid var(--border-md); border-radius: var(--radius-md); padding: 13px 15px; }
+    .metric-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 3px; }
+    .metric-val { font-size: 22px; font-weight: 500; }
+    .metric-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+    /* --- Two col --- */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+
+    /* --- Bars --- */
+    .bar-item { margin-bottom: 11px; }
+    .bar-label-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+    .bar-label { font-family: var(--font-mono); color: var(--text-secondary); }
+    .bar-count { color: var(--text-tertiary); }
+    .bar-track { height: 7px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+
+    /* --- Alerts --- */
+    .alert { padding: 9px 13px; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
+    .alert-warning { background: var(--bg-warning); border: 0.5px solid var(--border-warning); color: var(--text-warning); }
+    .alert-info { background: var(--bg-secondary); border: 0.5px solid var(--border); color: var(--text-secondary); }
+    .alert-success { background: var(--bg-success); border: 0.5px solid var(--border-success); color: var(--text-success); }
+
+    /* --- Heatmap table --- */
+    .heatmap-wrap { overflow-x: auto; }
+    .heatmap-table { width: 100%; min-width: 560px; border-collapse: collapse; }
+    .heatmap-table th { font-size: 11px; font-weight: 500; color: var(--text-tertiary); text-align: center; padding: 6px 4px 8px; border-bottom: 1px solid var(--border-hover); white-space: nowrap; }
+    .heatmap-table th:first-child { text-align: left; min-width: 140px; }
+    .heatmap-table th.sort-active { color: var(--text-primary); cursor: pointer; }
+    .heatmap-table th.sortable { cursor: pointer; user-select: none; }
+    .heatmap-table th.sortable:hover { color: var(--text-primary); }
+    .heatmap-table td { padding: 4px 4px; border-bottom: 0.5px solid var(--border); }
+    .heatmap-table tr:last-child td { border-bottom: none; }
+    .heatmap-table tr.expanded-row td { border-bottom: none; }
+    .el-label { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; padding-right: 8px; display: flex; align-items: center; gap: 5px; }
+    .line-num { font-size: 10px; color: var(--text-tertiary); background: var(--bg-secondary); border-radius: 3px; padding: 1px 4px; flex-shrink: 0; }
+    .heat-cell { display: flex; align-items: center; justify-content: center; height: 27px; border-radius: 4px; font-size: 11px; font-weight: 500; min-width: 32px; margin: 0 auto; position: relative; cursor: default; }
+    .heat-cell.has-classes { cursor: pointer; }
+    .score-col { padding-left: 6px; min-width: 85px; }
+    .score-bar-wrap { display: flex; align-items: center; gap: 5px; }
+    .score-bar-track { flex: 1; height: 5px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+    .score-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); min-width: 28px; text-align: right; }
+    .expand-btn { padding: 3px 6px; font-size: 11px; border-radius: 4px; margin-left: 2px; flex-shrink: 0; background: transparent; border: none; color: var(--text-tertiary); cursor: pointer; }
+    .expand-btn:hover { color: var(--text-primary); background: var(--bg-secondary); }
+
+    /* --- Expanded detail row --- */
+    .detail-row { display: none; }
+    .detail-row.open { display: table-row; }
+    .detail-inner { padding: 8px 8px 12px; background: var(--bg-secondary); border-bottom: 0.5px solid var(--border-md); }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-top: 8px; }
+    .detail-bp-block { border: 0.5px solid var(--border-md); border-radius: var(--radius-md); padding: 8px 10px; background: var(--bg-primary); }
+    .detail-bp-label { font-size: 11px; font-family: var(--font-mono); font-weight: 500; color: var(--text-tertiary); margin-bottom: 5px; }
+    .detail-cls-list { display: flex; flex-wrap: wrap; gap: 3px; }
+    .cls-chip { font-size: 10px; font-family: var(--font-mono); background: var(--bg-secondary); border: 0.5px solid var(--border); border-radius: 3px; padding: 2px 6px; color: var(--text-secondary); }
+    .cls-chip.missing { background: var(--bg-danger); border-color: var(--border-danger); color: var(--text-danger); font-style: italic; }
+    .fix-suggestion { margin-top: 10px; padding: 8px 10px; background: var(--bg-success); border: 0.5px solid var(--border-success); border-radius: var(--radius-md); font-size: 12px; color: var(--text-success); }
+    .fix-suggestion strong { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 500; }
+    .fix-code { font-family: var(--font-mono); font-size: 11px; word-break: break-all; line-height: 1.6; }
+
+    /* --- Gaps --- */
+    .gap-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+    .gap-row:last-child { border-bottom: none; }
+    .gap-tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); background: var(--bg-danger); color: var(--text-danger); }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 4px; }
+
+    /* --- Tooltip --- */
+    .tooltip-popup { position: fixed; background: var(--text-primary); color: var(--bg-primary); font-size: 11px; font-family: var(--font-mono); padding: 5px 9px; border-radius: var(--radius-sm); pointer-events: none; z-index: 9999; opacity: 0; transition: opacity 0.1s; white-space: pre; line-height: 1.6; max-width: 280px; word-break: break-all; white-space: normal; }
+    .tooltip-popup.visible { opacity: 1; }
+
+    /* --- Legend --- */
+    .legend-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+    .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+    /* --- Empty / copy state --- */
+    .empty-state { text-align: center; padding: 50px 24px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 44px; display: block; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+    .copy-toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-primary); color: var(--bg-primary); font-size: 13px; padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 9999; display: flex; align-items: center; gap: 6px; }
+    .copy-toast.show { opacity: 1; }
+
+    code { font-family: var(--font-mono); font-size: 0.88em; background: var(--bg-secondary); padding: 1px 5px; border-radius: 4px; }
+
+    #results { display: none; }
+
+    @media (max-width: 640px) {
+      .two-col { grid-template-columns: 1fr; }
+      .header-right span { display: none; }
+      .kbd-hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tooltip-popup" id="tooltip"></div>
+  <div class="copy-toast" id="copy-toast"><i class="ti ti-check"></i> Copied!</div>
+
+  <header class="app-header">
+    <div class="logo" aria-hidden="true"><i class="ti ti-layout-grid"></i></div>
+    <h1>Tailwind Breakpoint Inspector</h1>
+    <div class="header-right">
+      <span>v2.0</span>
+      <button class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="ti ti-moon" id="theme-icon"></i></button>
+      <button class="btn-icon" onclick="exportJSON()" title="Export report as JSON" aria-label="Export JSON"><i class="ti ti-download"></i></button>
+      <button class="btn-icon" onclick="copyReport()" title="Copy summary to clipboard" aria-label="Copy report"><i class="ti ti-copy"></i></button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Input card -->
+    <div class="card">
+      <p class="input-desc">Paste HTML, JSX, TSX, or Vue template — or <strong>drag & drop a file</strong> directly onto the text area.</p>
+      <div class="drop-zone" id="drop-zone">
+        <textarea id="code-input" aria-label="HTML or JSX input" placeholder='<div class="flex sm:block md:hidden lg:flex xl:items-center">
+  <nav class="hidden sm:flex gap-4 lg:gap-8">...</nav>
+  <button class="block sm:hidden p-2 md:p-4">Menu</button>
+</div>
+
+— or drag & drop a .html / .jsx / .tsx / .vue file here —'></textarea>
+        <p class="drop-hint"><i class="ti ti-file-upload" aria-hidden="true"></i> Drop .html · .jsx · .tsx · .vue</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="analyze()"><i class="ti ti-chart-bar" aria-hidden="true"></i> Analyze</button>
+        <button onclick="loadSample()"><i class="ti ti-file-code" aria-hidden="true"></i> Load sample</button>
+        <button onclick="clearAll()"><i class="ti ti-trash" aria-hidden="true"></i> Clear</button>
+        <span class="kbd-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to analyze</span>
+      </div>
+    </div>
+
+    <div id="empty-state" class="empty-state">
+      <i class="ti ti-layout-grid" aria-hidden="true"></i>
+      <p>Paste your HTML/JSX above and click Analyze</p>
+    </div>
+
+    <div id="results">
+
+      <!-- Metrics -->
+      <div id="metrics-row" class="metrics-grid"></div>
+
+      <!-- Alerts -->
+      <div id="alerts-section"></div>
+
+      <!-- Charts -->
+      <div class="two-col">
+        <div class="card">
+          <p class="card-title">Breakpoint usage distribution</p>
+          <div id="bp-bars"></div>
+        </div>
+        <div class="card">
+          <p class="card-title">Coverage by class group</p>
+          <div id="group-bars"></div>
+        </div>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <p class="card-title" style="margin:0">Element heatmap</p>
+          <div class="legend-row" style="margin:0">
+            <div class="legend-item"><div class="legend-swatch" style="background:#EFF7FF;border:0.5px solid #B5D4F4"></div>none</div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#85B7EB"></div>low</div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#378ADD"></div>med</div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#185FA5"></div>high</div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#042C53"></div>full</div>
+          </div>
+        </div>
+
+        <!-- Filter / sort bar -->
+        <div class="filter-bar">
+          <label for="filter-sel">Show:</label>
+          <select id="filter-sel" onchange="renderHeatmap()">
+            <option value="all">All elements</option>
+            <option value="needs-work">Needs work (&lt;60%)</option>
+            <option value="no-bp">No breakpoints</option>
+            <option value="gaps">Has gaps</option>
+            <option value="good">Good (≥80%)</option>
+          </select>
+          <label for="sort-sel">Sort:</label>
+          <select id="sort-sel" onchange="renderHeatmap()">
+            <option value="order">Document order</option>
+            <option value="score-asc">Score: low → high</option>
+            <option value="score-desc">Score: high → low</option>
+            <option value="tag">Tag name</option>
+            <option value="bp-count">Most bp classes</option>
+          </select>
+          <span class="filter-sep"></span>
+          <span class="badge-count" id="visible-count">0 elements</span>
+        </div>
+
+        <div class="heatmap-wrap">
+          <table class="heatmap-table" aria-label="Breakpoint heatmap per element">
+            <thead>
+              <tr>
+                <th>element</th>
+                <th>sm:</th><th>md:</th><th>lg:</th><th>xl:</th><th>2xl:</th>
+                <th>base</th>
+                <th style="text-align:left;padding-left:8px">score</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="heatmap-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Gaps -->
+      <div class="card">
+        <p class="card-title">Responsive gaps — missing breakpoints per element</p>
+        <div id="gaps-list"></div>
+      </div>
+
+      <!-- Auto-fix suggestions -->
+      <div class="card" id="fix-card">
+        <p class="card-title">Auto-fix suggestions</p>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Elements with score &lt;60% — suggested classes to add for each missing breakpoint, based on existing patterns.</p>
+        <div id="fix-list"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const BPS = ['sm','md','lg','xl','2xl'];
+    const BP_WIDTHS = { sm:'640px', md:'768px', lg:'1024px', xl:'1280px', '2xl':'1536px' };
+
+    let parsedData = [];
+    let darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme();
+
+    function applyTheme() {
+      document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.className = darkMode ? 'ti ti-sun' : 'ti ti-moon';
+    }
+
+    function toggleTheme() { darkMode = !darkMode; applyTheme(); }
+
+    function bpColors() {
+      return darkMode
+        ? ['#1e1e1c','#0C447C','#185FA5','#378ADD','#85B7EB','#B5D4F4']
+        : ['#EFF7FF','#B5D4F4','#85B7EB','#378ADD','#185FA5','#042C53'];
+    }
+    function bpTextColors() {
+      return darkMode
+        ? ['#888780','#B5D4F4','#ffffff','#ffffff','#042C53','#042C53']
+        : ['#0C447C','#0C447C','#042C53','#ffffff','#ffffff','#ffffff'];
+    }
+
+    const CLASS_GROUPS = {
+      layout:     ['flex','grid','block','hidden','inline','flow','col','row','items','justify','gap','place','container'],
+      spacing:    ['p','px','py','pt','pb','pl','pr','m','mx','my','mt','mb','ml','mr','space'],
+      sizing:     ['w','h','min','max','size'],
+      typography: ['text','font','leading','tracking','truncate','whitespace','break'],
+      display:    ['overflow','visible','invisible','opacity','z','pointer'],
+    };
+
+    const SAMPLE = `<header class="flex items-center justify-between p-4 sm:p-6 lg:p-8">
+  <div class="text-lg font-bold sm:text-xl lg:text-2xl">Brand</div>
+  <nav class="hidden sm:flex md:flex gap-4 lg:gap-8">
+    <a class="text-sm lg:text-base hover:text-blue-600" href="#">Home</a>
+    <a class="text-sm lg:text-base" href="#">About</a>
+  </nav>
+  <button class="block sm:hidden p-2 rounded">Menu</button>
+</header>
+<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+    <div class="bg-white rounded-lg p-4 sm:p-6 shadow-sm lg:shadow-md">
+      <h2 class="text-base sm:text-lg lg:text-xl xl:text-2xl font-medium">Card title</h2>
+      <p class="text-sm text-gray-600 mt-2 lg:mt-3">Description here</p>
+    </div>
+    <div class="bg-white rounded-lg p-4 sm:p-6">
+      <h2 class="text-base sm:text-lg font-medium">Another card</h2>
+    </div>
+  </section>
+  <aside class="w-full md:w-1/3 lg:w-1/4 xl:w-1/5 mt-8 md:mt-0 md:ml-8">
+    <div class="p-4 rounded border">Sidebar content</div>
+  </aside>
+</main>`;
+
+    /* ---- Parsing ---- */
+    function extractElements(html) {
+      const re = /<([a-zA-Z][a-zA-Z0-9-]*)[^>]*class\s*=\s*["'`]([^"'`]*)["'`][^>]*>/g;
+      const els = [];
+      const lines = html.split('\n');
+      let m;
+      while ((m = re.exec(html)) !== null) {
+        const pos = m.index;
+        let lineNum = 1;
+        let chars = 0;
+        for (let i = 0; i < lines.length; i++) {
+          chars += lines[i].length + 1;
+          if (chars > pos) { lineNum = i + 1; break; }
+        }
+        els.push({
+          tag: m[1],
+          classes: m[2].trim().split(/\s+/).filter(Boolean),
+          raw: m[0].slice(0, 100),
+          line: lineNum,
+        });
+      }
+      return els;
+    }
+
+    function parseBpClasses(classes) {
+      const bpMap = {};
+      BPS.forEach(bp => bpMap[bp] = []);
+      const base = [];
+      classes.forEach(cls => {
+        const match = cls.match(/^(sm|md|lg|xl|2xl):(.+)$/);
+        if (match) bpMap[match[1]].push(match[2]);
+        else if (!cls.match(/^(hover|focus|dark|group|peer|active|disabled|visited|aria|data|print|motion|supports):/)) base.push(cls);
+      });
+      return { bpMap, base };
+    }
+
+    function coverageScore(bpMap, base) {
+      const used = BPS.filter(bp => bpMap[bp].length > 0).length;
+      return Math.round(((used + (base.length > 0 ? 1 : 0)) / (BPS.length + 1)) * 100);
+    }
+
+    function detectGroupHits(classes) {
+      const hits = {};
+      Object.keys(CLASS_GROUPS).forEach(g => hits[g] = 0);
+      classes.forEach(cls => {
+        const base = cls.replace(/^(sm|md|lg|xl|2xl):/, '').split('-')[0];
+        Object.entries(CLASS_GROUPS).forEach(([g, prefixes]) => {
+          if (prefixes.some(p => base === p || (base.startsWith(p) && base.length > p.length))) hits[g]++;
+        });
+      });
+      return hits;
+    }
+
+    /* ---- Color helpers ---- */
+    function heatColor(count, max) {
+      const BC = bpColors(), BT = bpTextColors();
+      if (!max || !count) return { bg: BC[0], text: BT[0] };
+      const r = count / max;
+      const i = r < 0.2 ? 1 : r < 0.4 ? 2 : r < 0.65 ? 3 : r < 0.9 ? 4 : 5;
+      return { bg: BC[i], text: BT[i] };
+    }
+
+    /* ---- Auto-fix suggestion ---- */
+    function generateFix(el) {
+      const missing = BPS.filter(bp => el.bpMap[bp].length === 0);
+      if (!missing.length || !el.base.length) return null;
+      const suggestions = [];
+      missing.forEach(bp => {
+        const adjacent = BPS.filter(b => b !== bp && el.bpMap[b].length > 0);
+        if (adjacent.length) {
+          const ref = adjacent[0];
+          const refCls = el.bpMap[ref];
+          const suggested = refCls.slice(0, 2).map(c => `${bp}:${c}`);
+          suggestions.push({ bp, suggested });
+        } else {
+          const suggested = el.base.slice(0, 2).map(c => `${bp}:${c}`);
+          suggestions.push({ bp, suggested });
+        }
+      });
+      return suggestions;
+    }
+
+    /* ---- Main analyze ---- */
+    function analyze() {
+      const html = document.getElementById('code-input').value.trim();
+      if (!html) return;
+
+      const elements = extractElements(html);
+      const alertsEl = document.getElementById('alerts-section');
+
+      if (!elements.length) {
+        alertsEl.innerHTML = `<div class="alert alert-warning"><i class="ti ti-alert-triangle"></i> No elements with class attributes found. Make sure your HTML uses class="..." syntax.</div>`;
+        showResults(); return;
+      }
+
+      const allBp = { sm:0, md:0, lg:0, xl:0, '2xl':0 };
+      const allGroup = { layout:0, spacing:0, sizing:0, typography:0, display:0 };
+      let totalCls = 0, totalBpCls = 0;
+
+      parsedData = elements.map((el, idx) => {
+        const { bpMap, base } = parseBpClasses(el.classes);
+        BPS.forEach(bp => { allBp[bp] += bpMap[bp].length; totalBpCls += bpMap[bp].length; });
+        totalCls += el.classes.length;
+        const groups = detectGroupHits(el.classes);
+        Object.keys(groups).forEach(g => allGroup[g] += groups[g]);
+        return { ...el, bpMap, base, score: coverageScore(bpMap, base), idx };
+      });
+
+      const avgScore = Math.round(parsedData.reduce((s,e) => s + e.score, 0) / parsedData.length);
+      const bpRatio  = totalCls > 0 ? Math.round(totalBpCls / totalCls * 100) : 0;
+      const fullCov  = parsedData.filter(e => BPS.every(bp => e.bpMap[bp].length > 0)).length;
+      const noCov    = parsedData.filter(e => BPS.every(bp => e.bpMap[bp].length === 0)).length;
+      const maxBp    = Math.max(...Object.values(allBp), 1);
+      const maxGroup = Math.max(...Object.values(allGroup), 1);
+      const highRisk = parsedData.filter(e => e.score < 40).length;
+
+      /* metrics */
+      const scoreColor = avgScore >= 80 ? '#1D9E75' : avgScore >= 50 ? '#BA7517' : '#E24B4A';
+      document.getElementById('metrics-row').innerHTML = [
+        ['elements scanned', elements.length, ''],
+        ['avg coverage', avgScore + '%', avgScore >= 80 ? '● good' : avgScore >= 50 ? '● fair' : '● low'],
+        ['bp class ratio', bpRatio + '%', `${totalBpCls} of ${totalCls} classes`],
+        ['fully responsive', fullCov, `${Math.round(fullCov/elements.length*100)}% of elements`],
+        ['no breakpoints', noCov, noCov > 0 ? '⚠ needs attention' : '✓ none'],
+        ['high risk (<40%)', highRisk, highRisk > 0 ? '⚠ fix these first' : '✓ none'],
+      ].map(([l,v,s]) => `<div class="metric"><div class="metric-label">${l}</div><div class="metric-val">${v}</div>${s?`<div class="metric-sub">${s}</div>`:''}</div>`).join('');
+
+      /* alerts */
+      const alerts = [];
+      if (noCov > 0) alerts.push(`<div class="alert alert-warning"><i class="ti ti-alert-triangle"></i> <div><strong>${noCov} element${noCov>1?'s':''} have zero breakpoint classes</strong> — they will look identical on all screen sizes.</div></div>`);
+      if (allBp['2xl'] === 0 && elements.length > 2) alerts.push(`<div class="alert alert-info"><i class="ti ti-info-circle"></i> No <code>2xl:</code> classes found. Consider optimizing for large screens ≥1536px.</div>`);
+      if (allBp['xl'] === 0 && elements.length > 3) alerts.push(`<div class="alert alert-info"><i class="ti ti-info-circle"></i> No <code>xl:</code> classes found. Desktop-wide layouts (≥1280px) may not be optimized.</div>`);
+      if (avgScore >= 80) alerts.push(`<div class="alert alert-success"><i class="ti ti-circle-check"></i> Overall responsive coverage looks great! Average score is ${avgScore}%.</div>`);
+      alertsEl.innerHTML = alerts.join('');
+
+      /* bp bars */
+      document.getElementById('bp-bars').innerHTML = BPS.map(bp => {
+        const c = allBp[bp];
+        const pct = Math.round(c / (totalBpCls || 1) * 100);
+        const w = Math.round(c / maxBp * 100);
+        return `<div class="bar-item">
+          <div class="bar-label-row"><span class="bar-label">${bp}: <span style="color:var(--text-tertiary);font-family:var(--font-sans)">${BP_WIDTHS[bp]}+</span></span><span class="bar-count">${c} · ${pct}%</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:#378ADD"></div></div>
+        </div>`;
+      }).join('');
+
+      /* group bars */
+      document.getElementById('group-bars').innerHTML = Object.entries(allGroup).map(([g,c]) => {
+        const w = Math.round(c / maxGroup * 100);
+        const colors = { layout:'#378ADD', spacing:'#1D9E75', sizing:'#BA7517', typography:'#534AB7', display:'#D85A30' };
+        return `<div class="bar-item">
+          <div class="bar-label-row"><span class="bar-label">${g}</span><span class="bar-count">${c} classes</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${colors[g]||'#378ADD'}"></div></div>
+        </div>`;
+      }).join('');
+
+      renderHeatmap();
+      renderGaps();
+      renderFixes();
+      showResults();
+    }
+
+    /* ---- Heatmap render (with filter/sort) ---- */
+    function renderHeatmap() {
+      if (!parsedData.length) return;
+      const filter = document.getElementById('filter-sel').value;
+      const sort   = document.getElementById('sort-sel').value;
+
+      let data = [...parsedData];
+
+      /* filter */
+      if (filter === 'needs-work') data = data.filter(e => e.score < 60);
+      else if (filter === 'no-bp') data = data.filter(e => BPS.every(bp => e.bpMap[bp].length === 0));
+      else if (filter === 'gaps') data = data.filter(e => { const m = BPS.filter(bp => e.bpMap[bp].length === 0); return m.length > 0 && m.length < BPS.length; });
+      else if (filter === 'good') data = data.filter(e => e.score >= 80);
+
+      /* sort */
+      if (sort === 'score-asc') data.sort((a,b) => a.score - b.score);
+      else if (sort === 'score-desc') data.sort((a,b) => b.score - a.score);
+      else if (sort === 'tag') data.sort((a,b) => a.tag.localeCompare(b.tag));
+      else if (sort === 'bp-count') data.sort((a,b) => {
+        const sa = BPS.reduce((s,bp)=>s+a.bpMap[bp].length,0);
+        const sb = BPS.reduce((s,bp)=>s+b.bpMap[bp].length,0);
+        return sb - sa;
+      });
+
+      document.getElementById('visible-count').textContent = `${data.length} element${data.length !== 1?'s':''}`;
+
+      if (!data.length) {
+        document.getElementById('heatmap-rows').innerHTML = `<tr><td colspan="9" style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:13px">No elements match this filter.</td></tr>`;
+        return;
+      }
+
+      document.getElementById('heatmap-rows').innerHTML = data.map(el => {
+        const elMax = BPS.reduce((s,bp) => s + el.bpMap[bp].length, 0);
+        const cells = BPS.map(bp => {
+          const cnt = el.bpMap[bp].length;
+          const c = heatColor(cnt, Math.max(elMax,1));
+          const title = cnt > 0 ? el.bpMap[bp].join(', ') : '(none)';
+          return `<td><div class="heat-cell ${cnt>0?'has-classes':''}" style="background:${c.bg};color:${c.text}"
+            onmouseenter="showTip(event,'${bp}: ${title.replace(/'/g,"&#39;")}')"
+            onmouseleave="hideTip()">${cnt||''}</div></td>`;
+        }).join('');
+        const bc = heatColor(el.base.length, Math.max(el.classes.length,1));
+        const sc = el.score;
+        const scColor = sc >= 80 ? '#1D9E75' : sc >= 50 ? '#BA7517' : '#E24B4A';
+        const rowId = `row-${el.idx}`;
+        const detailId = `detail-${el.idx}`;
+        return `<tr id="${rowId}">
+          <td>
+            <div class="el-label" title="${el.raw.replace(/"/g,'&quot;')}">
+              <span class="line-num">L${el.line}</span>
+              <span style="color:var(--text-tertiary)">&lt;</span>${el.tag}<span style="color:var(--text-tertiary)">&gt;</span>
+            </div>
+          </td>
+          ${cells}
+          <td><div class="heat-cell" style="background:${bc.bg};color:${bc.text}"
+            onmouseenter="showTip(event,'base: ${el.base.slice(0,5).join(', ')}${el.base.length>5?'…':''}')"
+            onmouseleave="hideTip()">${el.base.length||''}</div></td>
+          <td class="score-col">
+            <div class="score-bar-wrap">
+              <div class="score-bar-track"><div class="score-bar-fill" style="width:${sc}%;background:${scColor}"></div></div>
+              <span class="score-label">${sc}%</span>
+            </div>
+          </td>
+          <td><button class="expand-btn" onclick="toggleDetail(${el.idx})" title="Expand detail" aria-label="Toggle detail for element ${el.idx}"><i class="ti ti-chevron-down" id="chevron-${el.idx}"></i></button></td>
+        </tr>
+        <tr class="detail-row" id="${detailId}">
+          <td colspan="9">
+            <div class="detail-inner">
+              ${renderDetailInner(el)}
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderDetailInner(el) {
+      const allBpBlocks = BPS.map(bp => {
+        const classes = el.bpMap[bp];
+        const chips = classes.length
+          ? classes.map(c => `<span class="cls-chip">${bp}:${c}</span>`).join('')
+          : `<span class="cls-chip missing">— none —</span>`;
+        return `<div class="detail-bp-block">
+          <div class="detail-bp-label">${bp}: <span style="font-size:10px;font-weight:400">${BP_WIDTHS[bp]}+</span></div>
+          <div class="detail-cls-list">${chips}</div>
+        </div>`;
+      }).join('');
+
+      const baseChips = el.base.map(c => `<span class="cls-chip">${c}</span>`).join('') || '<span class="cls-chip missing">— none —</span>';
+      const baseBlock = `<div class="detail-bp-block"><div class="detail-bp-label">base</div><div class="detail-cls-list">${baseChips}</div></div>`;
+
+      const fix = generateFix(el);
+      let fixHtml = '';
+      if (fix && el.score < 80) {
+        const suggestions = fix.map(f => f.suggested.map(s => `<span class="cls-chip" style="cursor:pointer" onclick="copyText('${s}')" title="Click to copy">${s}</span>`).join('')).join(' ');
+        fixHtml = `<div class="fix-suggestion"><strong><i class="ti ti-wand" style="font-size:12px;vertical-align:-1px"></i> Suggested additions (click to copy)</strong><div class="cls-chip-list" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${suggestions}</div></div>`;
+      }
+
+      return `<div class="detail-grid">${allBpBlocks}${baseBlock}</div>${fixHtml}`;
+    }
+
+    function toggleDetail(idx) {
+      const row = document.getElementById(`detail-${idx}`);
+      const icon = document.getElementById(`chevron-${idx}`);
+      const open = row.classList.toggle('open');
+      if (icon) icon.style.transform = open ? 'rotate(180deg)' : '';
+    }
+
+    /* ---- Gaps ---- */
+    function renderGaps() {
+      const gapsHtml = parsedData
+        .filter(el => { const m = BPS.filter(bp => el.bpMap[bp].length === 0); return m.length > 0 && m.length < BPS.length; })
+        .map(el => {
+          const missing = BPS.filter(bp => el.bpMap[bp].length === 0);
+          return `<div class="gap-row">
+            <code style="font-size:12px;min-width:70px;color:var(--text-secondary)">L${el.line} &lt;${el.tag}&gt;</code>
+            <div class="tag-list">${missing.map(bp => `<span class="gap-tag">${bp}: missing</span>`).join('')}</div>
+          </div>`;
+        }).join('');
+      document.getElementById('gaps-list').innerHTML = gapsHtml ||
+        '<p style="font-size:13px;color:var(--text-tertiary);padding:8px 0">No partial gaps detected.</p>';
+    }
+
+    /* ---- Auto-fix list ---- */
+    function renderFixes() {
+      const lowScore = parsedData.filter(e => e.score < 60 && e.base.length > 0);
+      if (!lowScore.length) {
+        document.getElementById('fix-card').style.display = 'none';
+        return;
+      }
+      document.getElementById('fix-card').style.display = 'block';
+      document.getElementById('fix-list').innerHTML = lowScore.map(el => {
+        const fix = generateFix(el);
+        if (!fix) return '';
+        const rows = fix.map(f => {
+          const chips = f.suggested.map(s => `<span class="cls-chip" style="cursor:pointer" onclick="copyText('${s}')" title="Click to copy">${s}</span>`).join(' ');
+          return `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px">
+            <span style="font-size:11px;font-family:var(--font-mono);background:var(--bg-warning);color:var(--text-warning);padding:2px 6px;border-radius:4px;flex-shrink:0">${f.bp}:</span>
+            <div style="display:flex;flex-wrap:wrap;gap:3px">${chips}</div>
+          </div>`;
+        }).join('');
+        return `<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border)">
+          <div style="font-size:12px;font-family:var(--font-mono);color:var(--text-secondary);margin-bottom:8px"><span class="line-num" style="margin-right:6px">L${el.line}</span>&lt;${el.tag}&gt; — score: <strong>${el.score}%</strong></div>
+          ${rows}
+        </div>`;
+      }).join('');
+    }
+
+    /* ---- Tooltip ---- */
+    const tip = document.getElementById('tooltip');
+    function showTip(e, text) {
+      tip.textContent = text;
+      tip.classList.add('visible');
+      moveTip(e);
+    }
+    function moveTip(e) {
+      tip.style.left = (e.clientX + 12) + 'px';
+      tip.style.top  = (e.clientY - 28) + 'px';
+    }
+    function hideTip() { tip.classList.remove('visible'); }
+    document.addEventListener('mousemove', e => { if (tip.classList.contains('visible')) moveTip(e); });
+
+    /* ---- Export / Copy ---- */
+    function exportJSON() {
+      if (!parsedData.length) return;
+      const report = {
+        generated: new Date().toISOString(),
+        summary: {
+          totalElements: parsedData.length,
+          avgScore: Math.round(parsedData.reduce((s,e)=>s+e.score,0)/parsedData.length),
+          fullyResponsive: parsedData.filter(e=>BPS.every(bp=>e.bpMap[bp].length>0)).length,
+          noBreakpoints: parsedData.filter(e=>BPS.every(bp=>e.bpMap[bp].length===0)).length,
+        },
+        elements: parsedData.map(e => ({
+          tag: e.tag, line: e.line, score: e.score,
+          breakpoints: Object.fromEntries(BPS.map(bp=>[bp, e.bpMap[bp]])),
+          baseClasses: e.base,
+        }))
+      };
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tailwind-breakpoint-report.json';
+      a.click();
+    }
+
+    function copyReport() {
+      if (!parsedData.length) return;
+      const lines = parsedData.map(e => `L${e.line} <${e.tag}> score:${e.score}% | ${BPS.map(bp=>bp+':'+e.bpMap[bp].length).join(' ')}`);
+      const text = `Tailwind Breakpoint Report\n${'─'.repeat(40)}\n${lines.join('\n')}`;
+      navigator.clipboard.writeText(text).then(() => toast());
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => toast(`Copied: ${text}`));
+    }
+
+    function toast(msg) {
+      const t = document.getElementById('copy-toast');
+      t.innerHTML = `<i class="ti ti-check"></i> ${msg || 'Report copied!'}`;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    /* ---- Drag & Drop ---- */
+    const dz = document.getElementById('drop-zone');
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      dz.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['html','htm','jsx','tsx','vue','svelte'].includes(ext)) {
+        alert(`Unsupported file type: .${ext}\nSupported: .html .htm .jsx .tsx .vue .svelte`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = ev => {
+        document.getElementById('code-input').value = ev.target.result;
+        analyze();
+      };
+      reader.readAsText(file);
+    });
+
+    /* ---- Helpers ---- */
+    function showResults() {
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('empty-state').style.display = 'none';
+    }
+
+    function loadSample() {
+      document.getElementById('code-input').value = SAMPLE;
+      analyze();
+    }
+
+    function clearAll() {
+      document.getElementById('code-input').value = '';
+      parsedData = [];
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('empty-state').style.display = 'block';
+    }
+
+    document.getElementById('code-input').addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze();
+    });
+  </script>
+</body>
+</html>
