@@ -1,55 +1,52 @@
-# Tailwind Breakpoint Inspector
+# Tailwind Breakpoint Inspector v2.0
 
-A lightweight browser-based inspector for Tailwind responsive classes. Paste HTML, JSX, TSX, or Vue template code and get a breakpoint coverage report, heatmap, gap detection, and auto-fix suggestions.
+A premium, lightweight, browser-based inspector for Tailwind responsive classes and style configurations. Paste HTML, JSX, TSX, or Vue templates directly to audit breakpoint coverages, interactive states, class conflicts, responsive accessibility issues, and auto-fix recommendations.
 
-## Features
+Runs **completely client-side** in a single static HTML file with zero build step dependencies.
 
-- Analyze Tailwind class usage across responsive breakpoints: `sm`, `md`, `lg`, `xl`, and `2xl`
-- Visual element heatmap showing breakpoint coverage and base classes
-- Metrics panel with average coverage, responsive ratio, and risk warnings
-- Breakpoint usage and class group distribution charts
-- Partial gap detection for elements missing some breakpoints
-- Auto-fix suggestions for low coverage elements
-- Export analysis as JSON
-- Copy summary report to clipboard
-- Drag & drop support for `.html`, `.htm`, `.jsx`, `.tsx`, `.vue`, and `.svelte` files
-- Light/dark theme toggle
+---
 
-## Usage
+## ✨ Features
 
-1. Open `index.html` in a browser.
-2. Paste your HTML, JSX, TSX, or Vue template into the input textarea.
-3. Click **Analyze** or press `Ctrl+Enter`.
-4. Review the generated:
-   - metrics
-   - breakpoint usage bars
-   - coverage heatmap
-   - responsive gap list
-   - auto-fix suggestions
-5. Use the export button to download a JSON report, or copy a summary report to the clipboard.
+### 🔍 Core Analytics
+- **Responsive Breakpoint Coverage**: Audits class distribution across Tailwind breakpoints.
+- **Visual Heatmap Table**: Highlights class coverage depth per line with dynamic tooltips and detail expansions.
+- **Interactive State Auditing**: Audits pseudo-class prefixes like `hover:`, `focus:`, `dark:`, `group-hover:`, and `peer-focus:`.
+- **Gaps & Auto-Fix Engine**: Identifies missing breakpoint classes and generates drop-in class suggestion fixes.
 
-## Supported input
+### ⚡ Advanced Tools (New in v2.0)
+- **Side-by-Side Comparison**: Input Version A and Version B side-by-side to track coverage changes (improvement/regression deltas).
+- **Class Conflict Detection**: Instantly flags contradictory classes (e.g. `block hidden` or `flex-row flex-col`) applied at the same breakpoint level.
+- **Responsive Accessibility (A11y) Audit**: Scans elements for small font sizing, low padding touch targets on mobile clickable layers, and truncation without title hover descriptors.
+- **Custom Breakpoint Configurator**: Add, remove, rename, or tweak min-width configurations to match your project's custom `tailwind.config.js` settings.
+- **High-Performance Highlight Editor**: Custom textareas featuring responsive element size syncs, tab indentation, and on-the-fly syntax coloring for Tailwind classes.
 
-- Raw HTML with `class="..."`
-- JSX/TSX with class attributes
-- Vue templates with class attributes
-- Drag and drop files supported: `.html`, `.htm`, `.jsx`, `.tsx`, `.vue`, `.svelte`
+### 💾 Integrations & Sharing
+- **Analysis History**: Saves up to 20 past runs to `localStorage` with a visual sparkline trend chart mapping coverage growth.
+- **Compressed Hash Sharing**: Generate instant shareable links encoding your inputs and breakpoint settings in the URL hash.
+- **Export Capabilities**: Download reports as standard `.json` configurations or `.csv` spreadsheet sheets.
+- **Print & PDF Layouts**: Dedicated print styles optimized for exporting clean audit papers.
+- **Theme Toggle**: Full dark mode toggle synchronized with custom styling.
 
-## How it works
+---
 
-- Extracts elements with a `class` attribute
-- Detects breakpoint-prefixed Tailwind classes like `sm:`, `md:`, `lg:`, `xl:`, and `2xl:`
-- Computes coverage score based on base classes plus responsive breakpoint coverage
-- Flags elements with missing breakpoint support or no responsive classes
-- Generates recommendations for missing breakpoint variants based on existing class patterns
+## 🚀 Getting Started
 
-## Notes
+1. Open [index.html](file:///c:/laragon/www/Tailwind-Breakpoint-Inspector/index.html) directly in any web browser.
+2. Paste your markup or drag & drop files (.html, .jsx, .tsx, .vue, .svelte) directly onto the editor panel.
+3. Click **Analyze** or press `Ctrl + Enter`.
+4. Review the generated reports, heatmap cards, accessibility items, and conflicts listing.
 
-- The inspector is intended for quick static scanning of markup and class names.
-- It does not execute Tailwind or resolve dynamic class names.
-- Use it for draft reviews, responsive audits, and improving Tailwind breakpoint consistency.
+---
 
-## License
+## 🛠️ How it Works
+
+- **Parser Engine**: Extracts element tags and attribute arrays using a lightweight browser RegExp match parser.
+- **Dynamic Config**: Adapts all audit rules on the fly based on settings stored in local caches.
+- **Chunked Rendering**: Employs asynchronous lazy rendering (chunking elements in batches of 150) to prevent thread freezes when analyzing massive templates containing thousands of tags.
+
+---
+
+## 📄 License
 
 MIT
-

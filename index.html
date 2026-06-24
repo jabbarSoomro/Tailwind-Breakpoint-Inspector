@@ -68,7 +68,7 @@
     .container { max-width: 960px; margin: 0 auto; padding: 28px 20px; }
 
     /* --- Cards --- */
-    .card { background: var(--bg-primary); border: 0.5px solid var(--border-md); border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 18px; }
+    .card { background: var(--bg-primary); border: 0.5px solid var(--border-md); border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 18px; position: relative; }
     .card-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; color: var(--text-primary); }
 
     /* --- Buttons --- */
@@ -81,9 +81,19 @@
     .btn-sm { padding: 4px 10px; font-size: 12px; }
 
     /* --- Textarea / Drop Zone --- */
-    .drop-zone { border: 1.5px dashed var(--border-hover); border-radius: var(--radius-md); padding: 3px; background: var(--bg-secondary); transition: border-color 0.15s, background 0.15s; }
+    .drop-zone { border: 1.5px dashed var(--border-hover); border-radius: var(--radius-md); padding: 3px; background: var(--bg-secondary); transition: border-color 0.15s, background 0.15s; position: relative; }
     .drop-zone.drag-over { border-color: #378ADD; background: #e6f1fb22; }
-    textarea { font-family: var(--font-mono); font-size: 12.5px; width: 100%; min-height: 150px; resize: vertical; border: none; border-radius: calc(var(--radius-md) - 2px); padding: 12px 14px; background: transparent; color: var(--text-primary); line-height: 1.6; outline: none; display: block; }
+    
+    /* --- Code Editor (Feature 8) --- */
+    .editor-container { position: relative; width: 100%; min-height: 180px; overflow: hidden; border-radius: calc(var(--radius-md) - 2px); }
+    .editor-backdrop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: auto; pointer-events: none; z-index: 1; box-sizing: border-box; }
+    .editor-highlight { margin: 0; padding: 12px 14px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary); box-sizing: border-box; min-height: 100%; text-align: left; }
+    .editor-textarea { position: relative; z-index: 2; background: transparent !important; color: transparent !important; caret-color: var(--text-primary) !important; border: none !important; outline: none !important; resize: vertical; display: block; width: 100%; min-height: 180px; box-sizing: border-box; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; padding: 12px 14px; }
+    .hl-tag { color: #378ADD; font-weight: 500; }
+    .hl-attr { color: #1D9E75; }
+    .hl-val { color: #BA7517; }
+    .hl-bp { background: rgba(55,138,221,0.15); border-radius: 2px; padding: 0 2px; border-bottom: 1.5px solid #378ADD; font-weight: 500; }
+
     .drop-hint { text-align: center; font-size: 12px; color: var(--text-tertiary); padding: 6px 0 4px; pointer-events: none; }
 
     /* --- Input row --- */
@@ -187,10 +197,231 @@
 
     #results { display: none; }
 
+    /* --- Drawer (Feature 1) --- */
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -350px;
+      width: 350px;
+      height: 100vh;
+      background: var(--bg-primary);
+      border-left: 0.5px solid var(--border-md);
+      box-shadow: -4px 0 15px rgba(0,0,0,0.08);
+      z-index: 1000;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .drawer.open { right: 0; }
+    .drawer-header {
+      padding: 16px 20px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-header h3 { font-size: 14px; font-weight: 600; }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+    .drawer-item {
+      padding: 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .drawer-item:hover { background: var(--bg-secondary); }
+    .drawer-item-title { font-size: 12px; font-weight: 500; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .drawer-item-desc { font-size: 11px; color: var(--text-tertiary); display: flex; justify-content: space-between; }
+    .drawer-footer { padding: 16px 20px; border-top: 0.5px solid var(--border); text-align: right; }
+    .drawer-close { background: transparent; border: none; font-size: 18px; color: var(--text-tertiary); cursor: pointer; padding: 4px; display: inline-flex; align-items: center; }
+    .drawer-close:hover { color: var(--text-primary); }
+
+    /* --- Conflict Detection (Feature 3) --- */
+    .conflict-item {
+      padding: 10px 12px;
+      background: var(--bg-danger);
+      border: 0.5px solid var(--border-danger);
+      color: var(--text-danger);
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .conflict-badge {
+      background: var(--text-danger);
+      color: var(--bg-danger);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: bold;
+    }
+
+    /* --- Settings Custom Breakpoint Layout (Feature 7) --- */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .settings-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .settings-item label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+    .settings-input {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 6px 10px;
+      border: 0.5px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    /* --- Comparison split screen styling (Feature 5) --- */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 12px;
+      width: 100%;
+    }
+    .compare-pane {
+      display: flex;
+      flex-direction: column;
+    }
+    .compare-label {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* --- Print formatting (Feature 4) --- */
+    @media print {
+      body, html { background: #fff !important; color: #000 !important; }
+      .app-header, .card:first-of-type, .filter-bar, .kbd-hint, .empty-state, .drawer, #settings-panel, .expand-btn, #theme-btn, select, button { display: none !important; }
+      .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+      .card { border: 1px solid #ccc !important; box-shadow: none !important; page-break-inside: avoid; }
+      .heatmap-table th { color: #000 !important; border-bottom: 1px solid #000 !important; }
+      .heatmap-table td { border-bottom: 1px solid #ccc !important; }
+      #results { display: block !important; }
+    }
+
+    /* --- SVG Donut Ring (Feature 12) --- */
+    .ring-container {
+      position: relative;
+      width: 54px;
+      height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .ring-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 5;
+    }
+    .ring-fill {
+      fill: none;
+      stroke-width: 5;
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 0.8s ease-in-out, stroke 0.3s;
+    }
+    .ring-text {
+      position: absolute;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* --- Sparkline Trend (Feature 12) --- */
+    .sparkline-container {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      border: 0.5px solid var(--border);
+    }
+    .sparkline-title {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .sparkline-svg {
+      width: 100%;
+      height: 35px;
+      overflow: visible;
+      display: block;
+    }
+    .sparkline-path {
+      fill: none;
+      stroke: #378ADD;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .sparkline-dots {
+      fill: #378ADD;
+      stroke: var(--bg-primary);
+      stroke-width: 1.5;
+      cursor: pointer;
+    }
+
+    /* --- Accessibility Warnings (Feature 9) --- */
+    .a11y-item {
+      padding: 9px 12px;
+      background: var(--bg-warning);
+      border: 0.5px solid var(--border-warning);
+      color: var(--text-warning);
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      font-size: 12.5px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5;
+    }
+    .a11y-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .a11y-badge.warning {
+      background: var(--text-warning);
+      color: var(--bg-warning);
+      border: 0.5px solid var(--border-warning);
+    }
+    .a11y-badge.info {
+      background: var(--text-secondary);
+      color: var(--bg-secondary);
+      border: 0.5px solid var(--border);
+    }
+
     @media (max-width: 640px) {
       .two-col { grid-template-columns: 1fr; }
       .header-right span { display: none; }
       .kbd-hint { display: none; }
+      .compare-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -204,26 +435,89 @@
     <h1>Tailwind Breakpoint Inspector</h1>
     <div class="header-right">
       <span>v2.0</span>
+      <button class="btn-sm" id="compare-toggle-btn" onclick="toggleComparisonMode()" title="Compare two snippets (Feature 5)"><i class="ti ti-columns"></i> Compare</button>
+      <button class="btn-icon" id="settings-toggle-btn" onclick="toggleSettings()" title="Custom Breakpoints (Feature 7)"><i class="ti ti-settings"></i></button>
+      <button class="btn-icon" onclick="shareURL()" title="Share Link (Feature 6)"><i class="ti ti-share"></i></button>
+      <button class="btn-icon" onclick="window.print()" title="Print Report (Feature 4)"><i class="ti ti-printer"></i></button>
+      <button class="btn-icon" onclick="toggleHistory()" title="Show History (Feature 1)"><i class="ti ti-history"></i></button>
       <button class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="ti ti-moon" id="theme-icon"></i></button>
       <button class="btn-icon" onclick="exportJSON()" title="Export report as JSON" aria-label="Export JSON"><i class="ti ti-download"></i></button>
+      <button class="btn-icon" onclick="exportCSV()" title="Export report as CSV" aria-label="Export CSV"><i class="ti ti-file-text"></i></button>
       <button class="btn-icon" onclick="copyReport()" title="Copy summary to clipboard" aria-label="Copy report"><i class="ti ti-copy"></i></button>
     </div>
   </header>
 
   <main class="container">
 
+    <!-- Settings Card (Feature 7) -->
+    <div class="card" id="settings-panel" style="display:none; margin-bottom:18px;">
+      <p class="card-title">Breakpoint Customization Settings</p>
+      <p class="input-desc" style="margin-bottom:12px;">Configure custom responsive breakpoints to match your <code>tailwind.config.js</code>.</p>
+      <div class="settings-grid" id="settings-breakpoint-grid">
+        <!-- Generated Dynamically -->
+      </div>
+      <div class="btn-row" style="margin-top:4px;">
+        <button class="btn-primary btn-sm" onclick="saveCustomBreakpoints()"><i class="ti ti-device-floppy"></i> Save & Apply</button>
+        <button class="btn-sm" onclick="resetCustomBreakpoints()"><i class="ti ti-refresh"></i> Reset to Tailwind Defaults</button>
+      </div>
+    </div>
+
     <!-- Input card -->
     <div class="card">
       <p class="input-desc">Paste HTML, JSX, TSX, or Vue template — or <strong>drag & drop a file</strong> directly onto the text area.</p>
-      <div class="drop-zone" id="drop-zone">
-        <textarea id="code-input" aria-label="HTML or JSX input" placeholder='<div class="flex sm:block md:hidden lg:flex xl:items-center">
+      
+      <!-- Single Snippet Input Zone -->
+      <div id="single-input-zone">
+        <div class="drop-zone" id="drop-zone">
+          <div class="editor-container" id="editor-container-single">
+            <div class="editor-backdrop" id="editor-backdrop-single">
+              <div class="editor-highlight" id="editor-highlight-single"></div>
+            </div>
+            <textarea id="code-input" class="editor-textarea" onscroll="syncScroll('single')" oninput="handleEditorInput('single')" aria-label="HTML or JSX input" placeholder='<header class="flex items-center justify-between p-4 sm:p-6 lg:p-8">
+  <div class="text-lg font-bold sm:text-xl lg:text-2xl">Brand</div>
   <nav class="hidden sm:flex gap-4 lg:gap-8">...</nav>
-  <button class="block sm:hidden p-2 md:p-4">Menu</button>
-</div>
-
-— or drag & drop a .html / .jsx / .tsx / .vue file here —'></textarea>
-        <p class="drop-hint"><i class="ti ti-file-upload" aria-hidden="true"></i> Drop .html · .jsx · .tsx · .vue</p>
+</header>'></textarea>
+          </div>
+          <p class="drop-hint"><i class="ti ti-file-upload" aria-hidden="true"></i> Drop .html · .jsx · .tsx · .vue</p>
+        </div>
       </div>
+
+      <!-- Comparison Snippet Input Zone (Feature 5) -->
+      <div id="compare-input-zone" style="display:none;">
+        <div class="compare-grid">
+          <div class="compare-pane">
+            <div class="compare-label">
+              <span>Version A (Original)</span>
+              <button class="btn-sm" onclick="loadSampleA()" style="padding: 2px 6px;">Sample A</button>
+            </div>
+            <div class="drop-zone" id="drop-zone-a">
+              <div class="editor-container" id="editor-container-a">
+                <div class="editor-backdrop" id="editor-backdrop-a">
+                  <div class="editor-highlight" id="editor-highlight-a"></div>
+                </div>
+                <textarea id="code-input-a" class="editor-textarea" onscroll="syncScroll('a')" oninput="handleEditorInput('a')" placeholder="Paste original HTML here..."></textarea>
+              </div>
+              <p class="drop-hint"><i class="ti ti-file-upload" aria-hidden="true"></i> Drop original</p>
+            </div>
+          </div>
+          <div class="compare-pane">
+            <div class="compare-label">
+              <span>Version B (Modified)</span>
+              <button class="btn-sm" onclick="loadSampleB()" style="padding: 2px 6px;">Sample B</button>
+            </div>
+            <div class="drop-zone" id="drop-zone-b">
+              <div class="editor-container" id="editor-container-b">
+                <div class="editor-backdrop" id="editor-backdrop-b">
+                  <div class="editor-highlight" id="editor-highlight-b"></div>
+                </div>
+                <textarea id="code-input-b" class="editor-textarea" onscroll="syncScroll('b')" oninput="handleEditorInput('b')" placeholder="Paste modified HTML here..."></textarea>
+              </div>
+              <p class="drop-hint"><i class="ti ti-file-upload" aria-hidden="true"></i> Drop modified</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="btn-row">
         <button class="btn-primary" onclick="analyze()"><i class="ti ti-chart-bar" aria-hidden="true"></i> Analyze</button>
         <button onclick="loadSample()"><i class="ti ti-file-code" aria-hidden="true"></i> Load sample</button>
@@ -242,8 +536,23 @@
       <!-- Metrics -->
       <div id="metrics-row" class="metrics-grid"></div>
 
+      <!-- Compare Stats Diff (Feature 5) -->
+      <div id="compare-metrics-row" class="metrics-grid" style="display:none; margin-bottom:18px;"></div>
+
       <!-- Alerts -->
       <div id="alerts-section"></div>
+
+      <!-- Class Conflicts Section (Feature 3) -->
+      <div class="card" id="conflict-card" style="display:none;">
+        <p class="card-title">Class Conflicts Detected</p>
+        <div id="conflict-list"></div>
+      </div>
+
+      <!-- Accessibility Warnings Card (Feature 9) -->
+      <div class="card" id="a11y-card" style="display:none; margin-bottom: 18px;">
+        <p class="card-title">Responsive Accessibility Audit</p>
+        <div id="a11y-list"></div>
+      </div>
 
       <!-- Charts -->
       <div class="two-col">
@@ -257,10 +566,16 @@
         </div>
       </div>
 
+      <!-- Interactive State Audit (Feature 2) -->
+      <div class="card" id="states-card" style="display:none;">
+        <p class="card-title">Interactive States Prefix Coverage (hover:, focus:, dark:, etc.)</p>
+        <div id="states-bars"></div>
+      </div>
+
       <!-- Heatmap -->
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-          <p class="card-title" style="margin:0">Element heatmap</p>
+          <p class="card-title" id="heatmap-title" style="margin:0">Element heatmap</p>
           <div class="legend-row" style="margin:0">
             <div class="legend-item"><div class="legend-swatch" style="background:#EFF7FF;border:0.5px solid #B5D4F4"></div>none</div>
             <div class="legend-item"><div class="legend-swatch" style="background:#85B7EB"></div>low</div>
@@ -294,14 +609,8 @@
 
         <div class="heatmap-wrap">
           <table class="heatmap-table" aria-label="Breakpoint heatmap per element">
-            <thead>
-              <tr>
-                <th>element</th>
-                <th>sm:</th><th>md:</th><th>lg:</th><th>xl:</th><th>2xl:</th>
-                <th>base</th>
-                <th style="text-align:left;padding-left:8px">score</th>
-                <th></th>
-              </tr>
+            <thead id="heatmap-head">
+              <!-- Dynamically rendered to match Custom Breakpoints -->
             </thead>
             <tbody id="heatmap-rows"></tbody>
           </table>
@@ -324,12 +633,45 @@
     </div>
   </main>
 
+  <!-- History Drawer (Feature 1) -->
+  <div id="history-drawer" class="drawer">
+    <div class="drawer-header">
+      <h3>Analysis History</h3>
+      <button class="drawer-close" onclick="toggleHistory()" aria-label="Close History"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="drawer-body" id="history-list">
+      <!-- Generated dynamically -->
+    </div>
+    <div class="drawer-footer">
+      <button class="btn-sm" onclick="clearHistory()"><i class="ti ti-trash"></i> Clear History</button>
+    </div>
+  </div>
+
   <script>
-    const BPS = ['sm','md','lg','xl','2xl'];
-    const BP_WIDTHS = { sm:'640px', md:'768px', lg:'1024px', xl:'1280px', '2xl':'1536px' };
+    // --- Dynamic Breakpoints (Feature 7) ---
+    let BPS = ['sm','md','lg','xl','2xl'];
+    let BP_WIDTHS = { sm:'640px', md:'768px', lg:'1024px', xl:'1280px', '2xl':'1536px' };
+
+    function loadCustomBreakpoints() {
+      try {
+        const bpsRaw = localStorage.getItem('twbp-custom-bps');
+        const bpWidthsRaw = localStorage.getItem('twbp-custom-bp-widths');
+        if (bpsRaw && bpWidthsRaw) {
+          BPS = JSON.parse(bpsRaw);
+          BP_WIDTHS = JSON.parse(bpWidthsRaw);
+        }
+      } catch (e) {
+        console.error('Failed to load custom breakpoints', e);
+      }
+    }
+    loadCustomBreakpoints();
 
     let parsedData = [];
+    let parsedDataA = [];
+    let parsedDataB = [];
+    let isComparisonMode = false;
     let darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
     applyTheme();
 
     function applyTheme() {
@@ -338,7 +680,11 @@
       if (icon) icon.className = darkMode ? 'ti ti-sun' : 'ti ti-moon';
     }
 
-    function toggleTheme() { darkMode = !darkMode; applyTheme(); }
+    function toggleTheme() {
+      darkMode = !darkMode;
+      applyTheme();
+      if (parsedData.length > 0) renderHeatmap();
+    }
 
     function bpColors() {
       return darkMode
@@ -350,6 +696,20 @@
         ? ['#888780','#B5D4F4','#ffffff','#ffffff','#042C53','#042C53']
         : ['#0C447C','#0C447C','#042C53','#ffffff','#ffffff','#ffffff'];
     }
+
+    // --- Interactive State Audit Configuration (Feature 2) ---
+    const STATE_PREFIXES = ['hover', 'focus', 'active', 'disabled', 'dark', 'group-hover', 'group-focus', 'peer-hover', 'peer-focus', 'visited', 'focus-within', 'focus-visible'];
+
+    // --- Class Conflict Configuration (Feature 3) ---
+    const MUTUALLY_EXCLUSIVE = [
+      ['block', 'inline-block', 'inline', 'flex', 'inline-flex', 'table', 'inline-table', 'table-row', 'table-cell', 'grid', 'inline-grid', 'contents', 'hidden'],
+      ['static', 'fixed', 'absolute', 'relative', 'sticky'],
+      ['w-auto', 'w-px', 'w-full', 'w-screen', 'w-min', 'w-max', 'w-fit'],
+      ['h-auto', 'h-px', 'h-full', 'h-screen', 'h-min', 'h-max', 'h-fit'],
+      ['flex-row', 'flex-row-reverse', 'flex-col', 'flex-col-reverse'],
+      ['text-left', 'text-center', 'text-right', 'text-justify', 'text-start', 'text-end'],
+      ['overflow-auto', 'overflow-hidden', 'overflow-clip', 'overflow-visible', 'overflow-scroll']
+    ];
 
     const CLASS_GROUPS = {
       layout:     ['flex','grid','block','hidden','inline','flow','col','row','items','justify','gap','place','container'],
@@ -382,7 +742,212 @@
   </aside>
 </main>`;
 
-    /* ---- Parsing ---- */
+    const SAMPLE_MODIFIED = `<header class="flex items-center justify-between p-4 sm:p-6 lg:p-8 xl:px-12">
+  <div class="text-lg font-bold sm:text-xl lg:text-2xl xl:text-3xl">Brand</div>
+  <nav class="hidden sm:flex md:flex gap-4 lg:gap-8">
+    <a class="text-sm lg:text-base hover:text-blue-600 focus:underline" href="#">Home</a>
+    <a class="text-sm lg:text-base focus:underline" href="#">About</a>
+  </nav>
+  <button class="block sm:hidden p-2 rounded">Menu</button>
+</header>
+<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 xl:py-20">
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+    <div class="bg-white rounded-lg p-4 sm:p-6 shadow-sm lg:shadow-md">
+      <h2 class="text-base sm:text-lg lg:text-xl xl:text-2xl font-medium">Card title</h2>
+      <p class="text-sm text-gray-600 mt-2 lg:mt-3">Description here</p>
+    </div>
+    <div class="bg-white rounded-lg p-4 sm:p-6">
+      <h2 class="text-base sm:text-lg md:text-xl font-medium">Another card</h2>
+    </div>
+  </section>
+  <aside class="w-full md:w-1/3 lg:w-1/4 xl:w-1/5 mt-8 md:mt-0 md:ml-8">
+    <div class="p-4 rounded border">Sidebar content</div>
+  </aside>
+</main>`;
+
+    // --- Editor highlight engine (Feature 8) ---
+    function highlightCode(text) {
+      if (!text) return '';
+      let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Highlight attributes and tailwind classes
+      html = html.replace(/(class(?:Name)?\s*=\s*["'`])([^"'`]*)(["'`])/gi, (match, prefix, classVal, suffix) => {
+        const highlightedClasses = classVal.split(/\s+/).map(cls => {
+          let foundBp = false;
+          for (const bp of BPS) {
+            if (cls.startsWith(bp + ':')) {
+              foundBp = true;
+              return `<span class="hl-bp">${bp}:</span>${cls.slice(bp.length + 1)}`;
+            }
+          }
+          return cls;
+        }).join(' ');
+        return `${prefix}<span class="hl-val">${highlightedClasses}</span>${suffix}`;
+      });
+
+      // HTML Tag highlighting
+      html = html.replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9-]*)/gi, '<span class="hl-tag">$1</span>');
+      // Attributes highlighting
+      html = html.replace(/(\s+[a-zA-Z0-9-]+)(?=\s*=)/gi, ' <span class="hl-attr">$1</span>');
+      return html;
+    }
+
+    function syncScroll(id) {
+      const textarea = document.getElementById(id === 'single' ? 'code-input' : `code-input-${id}`);
+      const backdrop = document.getElementById(`editor-backdrop-${id}`);
+      if (textarea && backdrop) {
+        backdrop.scrollTop = textarea.scrollTop;
+        backdrop.scrollLeft = textarea.scrollLeft;
+      }
+    }
+
+    function handleEditorInput(id) {
+      const textarea = document.getElementById(id === 'single' ? 'code-input' : `code-input-${id}`);
+      const highlight = document.getElementById(`editor-highlight-${id}`);
+      if (textarea && highlight) {
+        highlight.innerHTML = highlightCode(textarea.value);
+        syncScroll(id);
+      }
+    }
+
+    function setupEditorSupport(textareaId, id) {
+      const el = document.getElementById(textareaId);
+      if (!el) return;
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = el.selectionStart;
+          const end = el.selectionEnd;
+          el.value = el.value.substring(0, start) + '  ' + el.value.substring(end);
+          el.selectionStart = el.selectionEnd = start + 2;
+          handleEditorInput(id);
+        }
+      });
+      // Handle resize trigger scroll syncing
+      new ResizeObserver(() => syncScroll(id)).observe(el);
+    }
+
+    // --- Custom Breakpoints Panels (Feature 7) ---
+    function renderSettingsInputs() {
+      const grid = document.getElementById('settings-breakpoint-grid');
+      if (!grid) return;
+      
+      let html = BPS.map((bp, idx) => `
+        <div class="settings-row" style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+          <input type="text" class="settings-input" style="width:70px;" placeholder="Name" value="${bp}" id="bp-name-${idx}">
+          <input type="text" class="settings-input" style="width:100px;" placeholder="Width (e.g. 640px)" value="${BP_WIDTHS[bp] || ''}" id="bp-width-${idx}">
+          <button class="btn-sm btn-icon" onclick="removeBreakpointRow(${idx})" title="Delete"><i class="ti ti-trash"></i></button>
+        </div>
+      `).join('');
+      
+      html += `
+        <div style="margin-top:8px;">
+          <button class="btn-sm" onclick="addBreakpointRow()"><i class="ti ti-plus"></i> Add Breakpoint</button>
+        </div>
+      `;
+      grid.innerHTML = html;
+    }
+
+    function removeBreakpointRow(idx) {
+      syncBreakpointsFromUI();
+      BPS.splice(idx, 1);
+      renderSettingsInputs();
+    }
+
+    function addBreakpointRow() {
+      syncBreakpointsFromUI();
+      const newName = `bp${BPS.length + 1}`;
+      BPS.push(newName);
+      BP_WIDTHS[newName] = '1000px';
+      renderSettingsInputs();
+    }
+
+    function syncBreakpointsFromUI() {
+      const newBps = [];
+      const newWidths = {};
+      BPS.forEach((_, idx) => {
+        const nameInput = document.getElementById(`bp-name-${idx}`);
+        const widthInput = document.getElementById(`bp-width-${idx}`);
+        if (nameInput && nameInput.value.trim()) {
+          const name = nameInput.value.trim();
+          newBps.push(name);
+          newWidths[name] = widthInput ? widthInput.value.trim() : '';
+        }
+      });
+      BPS = newBps;
+      BP_WIDTHS = newWidths;
+    }
+
+    function saveCustomBreakpoints() {
+      syncBreakpointsFromUI();
+      localStorage.setItem('twbp-custom-bps', JSON.stringify(BPS));
+      localStorage.setItem('twbp-custom-bp-widths', JSON.stringify(BP_WIDTHS));
+      toast('Breakpoints saved & applied!');
+      renderHeatmapHeader();
+      if (parsedData.length > 0 || parsedDataA.length > 0) analyze();
+    }
+
+    function resetCustomBreakpoints() {
+      BPS = ['sm','md','lg','xl','2xl'];
+      BP_WIDTHS = { sm:'640px', md:'768px', lg:'1024px', xl:'1280px', '2xl':'1536px' };
+      localStorage.removeItem('twbp-custom-bps');
+      localStorage.removeItem('twbp-custom-bp-widths');
+      toast('Reset to default Tailwind breakpoints');
+      renderSettingsInputs();
+      renderHeatmapHeader();
+      if (parsedData.length > 0 || parsedDataA.length > 0) analyze();
+    }
+
+    function toggleSettings() {
+      const panel = document.getElementById('settings-panel');
+      const display = panel.style.display === 'none' ? 'block' : 'none';
+      panel.style.display = display;
+      if (display === 'block') {
+        renderSettingsInputs();
+      }
+    }
+
+    // --- Side-by-Side Comparison UI toggles (Feature 5) ---
+    function toggleComparisonMode() {
+      isComparisonMode = !isComparisonMode;
+      updateComparisonUI();
+      clearAll();
+    }
+
+    function updateComparisonUI() {
+      const singleZone = document.getElementById('single-input-zone');
+      const compareZone = document.getElementById('compare-input-zone');
+      const compareMetrics = document.getElementById('compare-metrics-row');
+      const compareBtn = document.getElementById('compare-toggle-btn');
+      
+      if (isComparisonMode) {
+        singleZone.style.display = 'none';
+        compareZone.style.display = 'block';
+        compareBtn.innerHTML = '<i class="ti ti-layout"></i> Single Mode';
+        compareBtn.classList.add('btn-primary');
+      } else {
+        singleZone.style.display = 'block';
+        compareZone.style.display = 'none';
+        compareMetrics.style.display = 'none';
+        compareBtn.innerHTML = '<i class="ti ti-columns"></i> Compare';
+        compareBtn.classList.remove('btn-primary');
+      }
+    }
+
+    function loadSampleA() {
+      document.getElementById('code-input-a').value = SAMPLE;
+      handleEditorInput('a');
+    }
+
+    function loadSampleB() {
+      document.getElementById('code-input-b').value = SAMPLE_MODIFIED;
+      handleEditorInput('b');
+    }
+
+    // --- Parsing helper engines ---
     function extractElements(html) {
       const re = /<([a-zA-Z][a-zA-Z0-9-]*)[^>]*class\s*=\s*["'`]([^"'`]*)["'`][^>]*>/g;
       const els = [];
@@ -410,12 +975,30 @@
       const bpMap = {};
       BPS.forEach(bp => bpMap[bp] = []);
       const base = [];
+      
+      const bpPattern = new RegExp(`^(${BPS.join('|')}):(.+)$`);
+      
       classes.forEach(cls => {
-        const match = cls.match(/^(sm|md|lg|xl|2xl):(.+)$/);
-        if (match) bpMap[match[1]].push(match[2]);
-        else if (!cls.match(/^(hover|focus|dark|group|peer|active|disabled|visited|aria|data|print|motion|supports):/)) base.push(cls);
+        const match = cls.match(bpPattern);
+        if (match) {
+          bpMap[match[1]].push(match[2]);
+        } else if (!cls.match(/^(hover|focus|active|disabled|dark|group-hover|group-focus|peer-hover|peer-focus|visited|focus-within|focus-visible|aria|data|print|motion|supports):/)) {
+          base.push(cls);
+        }
       });
       return { bpMap, base };
+    }
+
+    function parseStateClasses(classes) {
+      const stateMap = {};
+      STATE_PREFIXES.forEach(p => stateMap[p] = []);
+      classes.forEach(cls => {
+        const match = cls.match(/^([a-zA-Z-]+):(.+)$/);
+        if (match && STATE_PREFIXES.includes(match[1])) {
+          stateMap[match[1]].push(match[2]);
+        }
+      });
+      return stateMap;
     }
 
     function coverageScore(bpMap, base) {
@@ -427,7 +1010,7 @@
       const hits = {};
       Object.keys(CLASS_GROUPS).forEach(g => hits[g] = 0);
       classes.forEach(cls => {
-        const base = cls.replace(/^(sm|md|lg|xl|2xl):/, '').split('-')[0];
+        const base = cls.replace(new RegExp(`^(${BPS.join('|')}):`), '').split('-')[0];
         Object.entries(CLASS_GROUPS).forEach(([g, prefixes]) => {
           if (prefixes.some(p => base === p || (base.startsWith(p) && base.length > p.length))) hits[g]++;
         });
@@ -435,7 +1018,25 @@
       return hits;
     }
 
-    /* ---- Color helpers ---- */
+    function detectConflicts(el) {
+      const conflicts = [];
+      MUTUALLY_EXCLUSIVE.forEach(group => {
+        const baseHits = el.base.filter(cls => group.includes(cls));
+        if (baseHits.length > 1) {
+          conflicts.push({ bp: 'base', classes: baseHits });
+        }
+      });
+      BPS.forEach(bp => {
+        MUTUALLY_EXCLUSIVE.forEach(group => {
+          const bpHits = el.bpMap[bp].filter(cls => group.includes(cls));
+          if (bpHits.length > 1) {
+            conflicts.push({ bp, classes: bpHits });
+          }
+        });
+      });
+      return conflicts;
+    }
+
     function heatColor(count, max) {
       const BC = bpColors(), BT = bpTextColors();
       if (!max || !count) return { bg: BC[0], text: BT[0] };
@@ -444,7 +1045,6 @@
       return { bg: BC[i], text: BT[i] };
     }
 
-    /* ---- Auto-fix suggestion ---- */
     function generateFix(el) {
       const missing = BPS.filter(bp => el.bpMap[bp].length === 0);
       if (!missing.length || !el.base.length) return null;
@@ -464,30 +1064,304 @@
       return suggestions;
     }
 
-    /* ---- Main analyze ---- */
-    function analyze() {
-      const html = document.getElementById('code-input').value.trim();
-      if (!html) return;
+    function renderHeatmapHeader() {
+      const head = document.getElementById('heatmap-head');
+      if (!head) return;
+      const bpCols = BPS.map(bp => `<th>${bp}:</th>`).join('');
+      head.innerHTML = `<tr>
+        <th>element</th>
+        ${bpCols}
+        <th>base</th>
+        <th style="text-align:left;padding-left:8px">score</th>
+        <th></th>
+      </tr>`;
+    }
+    renderHeatmapHeader();
 
+    // --- Snippet analyzer function helper ---
+    function analyzeSnippet(html) {
       const elements = extractElements(html);
-      const alertsEl = document.getElementById('alerts-section');
+      if (!elements.length) return [];
+      
+      return elements.map((el, idx) => {
+        const { bpMap, base } = parseBpClasses(el.classes);
+        const stateMap = parseStateClasses(el.classes);
+        return {
+          ...el,
+          bpMap,
+          base,
+          stateMap,
+          score: coverageScore(bpMap, base),
+          idx
+        };
+      });
+    }
 
-      if (!elements.length) {
-        alertsEl.innerHTML = `<div class="alert alert-warning"><i class="ti ti-alert-triangle"></i> No elements with class attributes found. Make sure your HTML uses class="..." syntax.</div>`;
-        showResults(); return;
+
+
+      });
+    }
+
+    // --- Accessibility responsive audit (Feature 9) ---
+    function runA11yAudit(elements) {
+      const warnings = [];
+      elements.forEach(el => {
+        // 1. Check for small text size
+        const smallTextCls = el.classes.find(c => c.match(/text-(xs|\[[0-9]px\]|\[10px\]|\[11px\])/));
+        if (smallTextCls) {
+          warnings.push({
+            line: el.line,
+            tag: el.tag,
+            type: 'warning',
+            msg: `Small text size detected (<code>${smallTextCls}</code>). Verify readability on small screens.`
+          });
+        }
+        
+        // 2. Check hidden base but responsive display
+        const isHiddenBase = el.base.includes('hidden');
+        const hasResponsiveDisplay = BPS.some(bp => el.bpMap[bp].some(c => ['block','flex','grid','inline-block','inline'].includes(c)));
+        if (isHiddenBase && hasResponsiveDisplay) {
+          warnings.push({
+            line: el.line,
+            tag: el.tag,
+            type: 'info',
+            msg: `Element hidden on mobile but visible on larger breakpoints. Ensure mobile accessibility is not compromised.`
+          });
+        }
+        
+        // 3. Check touch target guidelines
+        const isInteractive = ['button', 'a'].includes(el.tag.toLowerCase()) || el.raw.includes('onclick') || el.raw.includes('cursor-pointer');
+        if (isInteractive) {
+          const hasLowPadding = el.base.some(c => ['p-0','p-1','px-0','px-1','py-0','py-1'].includes(c)) ||
+                              !el.classes.some(c => c.match(/p-[2-9]|p-[0-9]{2}/));
+          if (hasLowPadding) {
+            warnings.push({
+              line: el.line,
+              tag: el.tag,
+              type: 'warning',
+              msg: `Small padding on interactive element. Touch targets should be at least 44x44px (recommend <code>p-2</code> or larger on mobile).`
+            });
+          }
+        }
+        
+        // 4. Check truncation without title
+        const isTruncated = el.classes.some(c => ['truncate', 'text-ellipsis', 'overflow-hidden'].includes(c));
+        const hasTitle = el.raw.includes('title=');
+        if (isTruncated && !hasTitle) {
+          warnings.push({
+            line: el.line,
+            tag: el.tag,
+            type: 'info',
+            msg: `Truncated text detected without a <code>title="..."</code> attribute. Hover and screen-reader users cannot access full content.`
+          });
+        }
+      });
+      return warnings;
+    }
+
+    // --- Sparkline visual trend chart generator (Feature 12) ---
+    function renderSparkline() {
+      const scores = historyList.map(h => h.avgScore).reverse();
+      if (scores.length < 2) return '';
+      
+      const width = 300;
+      const height = 35;
+      const padding = 5;
+      
+      const step = (width - padding * 2) / (scores.length - 1 || 1);
+      const points = scores.map((score, i) => {
+        const x = padding + i * step;
+        const y = height - padding - ((score / 100) * (height - padding * 2));
+        return { x, y, score };
+      });
+      
+      const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+      const dots = points.map((p, i) => `
+        <circle class="sparkline-dots" cx="${p.x}" cy="${p.y}" r="3.5" 
+          onmouseenter="showTip(event,'Score: ${p.score}%')" 
+          onmouseleave="hideTip()" />
+      `).join('');
+      
+      return `
+        <div class="sparkline-container">
+          <div class="sparkline-title">Coverage Score Trend (Last ${scores.length} runs)</div>
+          <svg class="sparkline-svg" viewBox="0 0 ${width} ${height}">
+            <path class="sparkline-path" d="${d}" />
+            ${dots}
+          </svg>
+        </div>
+      `;
+    }
+
+    // --- Dynamic CSV Export (Feature 11) ---
+    function exportCSV() {
+      if (!parsedData.length) return;
+      
+      const csvHeaders = ['Line', 'Tag', 'Score', ...BPS.map(bp => bp + '_classes_count'), 'base_classes_count', ...BPS.map(bp => bp + '_classes'), 'base_classes'];
+      
+      const csvRows = parsedData.map(e => {
+        const row = [
+          e.line,
+          e.tag,
+          e.score,
+          ...BPS.map(bp => e.bpMap[bp].length),
+          e.base.length,
+          ...BPS.map(bp => `"${e.bpMap[bp].join(', ')}"`),
+          `"${e.base.join(', ')}"`
+        ];
+        return row.join(',');
+      });
+      
+      const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tailwind-breakpoint-report.csv';
+      a.click();
+    }
+
+    // --- Local storage history save/render triggers (Feature 1 & Feature 12) ---
+    function saveToHistory(codeSingle, codeA, codeB, isCompare, avgScore, elementCount) {
+      const item = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString(),
+        isCompare,
+        codeSingle,
+        codeA,
+        codeB,
+        avgScore,
+        elementCount
+      };
+      historyList.unshift(item);
+      if (historyList.length > 20) historyList.pop();
+      localStorage.setItem('twbp-history', JSON.stringify(historyList));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('history-list');
+      if (!container) return;
+      if (historyList.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-tertiary); font-size:12px; text-align:center; padding: 20px 0;">No saved analyses yet.</p>`;
+        return;
+      }
+      
+      const sparklineHtml = renderSparkline();
+      const listHtml = historyList.map(item => `
+        <div class="drawer-item" onclick="loadHistoryItem(${item.id})">
+          <div class="drawer-item-title">
+            <span>${item.timestamp}</span>
+            <span class="badge-count" style="background:${item.avgScore >= 80 ? 'var(--bg-success)' : item.avgScore >= 50 ? 'var(--bg-warning)' : 'var(--bg-danger)'}; color:${item.avgScore >= 80 ? 'var(--text-success)' : item.avgScore >= 50 ? 'var(--text-warning)' : 'var(--text-danger)'}">
+              ${item.avgScore}%
+            </span>
+          </div>
+          <div class="drawer-item-desc">
+            <span>${item.isCompare ? 'Comparison Mode' : 'Single Snippet'}</span>
+            <span>${item.elementCount} elements</span>
+          </div>
+        </div>
+      `).join('');
+      
+      container.innerHTML = sparklineHtml + listHtml;
+    }
+
+    // --- Main dispatcher and analyze calculations ---
+    function analyze() {
+      const alertsEl = document.getElementById('alerts-section');
+      alertsEl.innerHTML = '';
+      const startTime = performance.now();
+      
+      let elementEstimate = 0;
+      if (!isComparisonMode) {
+        const html = document.getElementById('code-input').value.trim();
+        if (!html) return;
+        elementEstimate = (html.match(/class\s*=\s*["'`]([^"'`]*)["'`]/g) || []).length;
+        if (elementEstimate > 200) {
+          toast(`Analyzing large snippet (${elementEstimate} elements)...`);
+        }
+        
+        parsedData = analyzeSnippet(html);
+        if (!parsedData.length) {
+          alertsEl.innerHTML = `<div class="alert alert-warning"><i class="ti ti-alert-triangle"></i> No elements with class attributes found.</div>`;
+          showResults();
+          return;
+        }
+        
+        parsedDataA = [];
+        parsedDataB = [];
+        document.getElementById('compare-metrics-row').style.display = 'none';
+        
+        const avgScore = Math.round(parsedData.reduce((s,e) => s + e.score, 0) / parsedData.length);
+        saveToHistory(html, null, null, false, avgScore, parsedData.length);
+        
+      } else {
+        const htmlA = document.getElementById('code-input-a').value.trim();
+        const htmlB = document.getElementById('code-input-b').value.trim();
+        
+        if (!htmlA || !htmlB) {
+          alertsEl.innerHTML = `<div class="alert alert-warning"><i class="ti ti-alert-triangle"></i> Please provide both Version A and Version B to compare.</div>`;
+          showResults();
+          return;
+        }
+        elementEstimate = (htmlB.match(/class\s*=\s*["'`]([^"'`]*)["'`]/g) || []).length;
+        if (elementEstimate > 200) {
+          toast(`Comparing large snippets (${elementEstimate} elements)...`);
+        }
+        
+        parsedDataA = analyzeSnippet(htmlA);
+        parsedDataB = analyzeSnippet(htmlB);
+        
+        if (!parsedDataB.length) {
+          alertsEl.innerHTML = `<div class="alert alert-warning"><i class="ti ti-alert-triangle"></i> No valid classes found in Version B.</div>`;
+          showResults();
+          return;
+        }
+        
+        parsedData = parsedDataB;
+        
+        const avgA = Math.round(parsedDataA.reduce((s,e) => s + e.score, 0) / (parsedDataA.length || 1));
+        const avgB = Math.round(parsedDataB.reduce((s,e) => s + e.score, 0) / (parsedDataB.length || 1));
+        const scoreDiff = avgB - avgA;
+        const scoreDiffText = scoreDiff >= 0 ? `+${scoreDiff}%` : `${scoreDiff}%`;
+        const scoreDiffColor = scoreDiff > 0 ? 'var(--text-success)' : scoreDiff < 0 ? 'var(--text-danger)' : 'var(--text-secondary)';
+        
+        const compareMetricsEl = document.getElementById('compare-metrics-row');
+        compareMetricsEl.style.display = 'grid';
+        compareMetricsEl.innerHTML = `
+          <div class="metric">
+            <div class="metric-label">Version A Avg Coverage</div>
+            <div class="metric-val">${avgA}%</div>
+            <div class="metric-sub">${parsedDataA.length} elements</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Version B Avg Coverage</div>
+            <div class="metric-val">${avgB}%</div>
+            <div class="metric-sub">${parsedDataB.length} elements</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Coverage Difference</div>
+            <div class="metric-val" style="color:${scoreDiffColor}">${scoreDiffText}</div>
+            <div class="metric-sub">${scoreDiff >= 0 ? '● Improvement' : '● Regression'}</div>
+          </div>
+        `;
+        
+        saveToHistory(null, htmlA, htmlB, true, avgB, parsedDataB.length);
       }
 
-      const allBp = { sm:0, md:0, lg:0, xl:0, '2xl':0 };
+      // Aggregate global statistics
+      const allBp = {};
+      BPS.forEach(bp => allBp[bp] = 0);
       const allGroup = { layout:0, spacing:0, sizing:0, typography:0, display:0 };
       let totalCls = 0, totalBpCls = 0;
 
-      parsedData = elements.map((el, idx) => {
-        const { bpMap, base } = parseBpClasses(el.classes);
-        BPS.forEach(bp => { allBp[bp] += bpMap[bp].length; totalBpCls += bpMap[bp].length; });
+      parsedData.forEach(el => {
+        BPS.forEach(bp => {
+          allBp[bp] += el.bpMap[bp].length;
+          totalBpCls += el.bpMap[bp].length;
+        });
         totalCls += el.classes.length;
         const groups = detectGroupHits(el.classes);
         Object.keys(groups).forEach(g => allGroup[g] += groups[g]);
-        return { ...el, bpMap, base, score: coverageScore(bpMap, base), idx };
       });
 
       const avgScore = Math.round(parsedData.reduce((s,e) => s + e.score, 0) / parsedData.length);
@@ -498,22 +1372,42 @@
       const maxGroup = Math.max(...Object.values(allGroup), 1);
       const highRisk = parsedData.filter(e => e.score < 40).length;
 
-      /* metrics */
-      const scoreColor = avgScore >= 80 ? '#1D9E75' : avgScore >= 50 ? '#BA7517' : '#E24B4A';
+      const duration = Math.round(performance.now() - startTime);
+
+      // --- Animated SVG Donut Ring rendering (Feature 12) ---
+      const strokeDashoffset = 125.6 - (125.6 * avgScore / 100);
+      const ringFillColor = avgScore >= 80 ? '#1D9E75' : avgScore >= 50 ? '#BA7517' : '#E24B4A';
+      const avgScoreHtml = `
+        <div class="ring-container">
+          <svg width="50" height="50">
+            <circle class="ring-bg" cx="25" cy="25" r="20" />
+            <circle class="ring-fill" cx="25" cy="25" r="20" stroke="${ringFillColor}" stroke-dasharray="125.6" stroke-dashoffset="${strokeDashoffset}" />
+          </svg>
+          <div class="ring-text">${avgScore}%</div>
+        </div>
+      `;
+
+      /* metrics rendering */
       document.getElementById('metrics-row').innerHTML = [
-        ['elements scanned', elements.length, ''],
-        ['avg coverage', avgScore + '%', avgScore >= 80 ? '● good' : avgScore >= 50 ? '● fair' : '● low'],
+        ['elements scanned', parsedData.length, `scanned in ${duration}ms`],
+        ['avg coverage', avgScoreHtml, avgScore >= 80 ? '● good' : avgScore >= 50 ? '● fair' : '● low'],
         ['bp class ratio', bpRatio + '%', `${totalBpCls} of ${totalCls} classes`],
-        ['fully responsive', fullCov, `${Math.round(fullCov/elements.length*100)}% of elements`],
+        ['fully responsive', fullCov, `${Math.round(fullCov/parsedData.length*100)}% of elements`],
         ['no breakpoints', noCov, noCov > 0 ? '⚠ needs attention' : '✓ none'],
         ['high risk (<40%)', highRisk, highRisk > 0 ? '⚠ fix these first' : '✓ none'],
-      ].map(([l,v,s]) => `<div class="metric"><div class="metric-label">${l}</div><div class="metric-val">${v}</div>${s?`<div class="metric-sub">${s}</div>`:''}</div>`).join('');
+      ].map(([l,v,s]) => {
+        const isRing = l === 'avg coverage';
+        return `<div class="metric" style="display:flex; ${isRing ? 'align-items:center; gap:12px;' : 'flex-direction:column;'}">
+          ${isRing 
+            ? `${v}<div><div class="metric-label">${l}</div><div class="metric-sub">${s}</div></div>` 
+            : `<div class="metric-label">${l}</div><div class="metric-val">${v}</div>${s?`<div class="metric-sub">${s}</div>`:''}`
+          }
+        </div>`;
+      }).join('');
 
-      /* alerts */
+      /* alerts rendering */
       const alerts = [];
       if (noCov > 0) alerts.push(`<div class="alert alert-warning"><i class="ti ti-alert-triangle"></i> <div><strong>${noCov} element${noCov>1?'s':''} have zero breakpoint classes</strong> — they will look identical on all screen sizes.</div></div>`);
-      if (allBp['2xl'] === 0 && elements.length > 2) alerts.push(`<div class="alert alert-info"><i class="ti ti-info-circle"></i> No <code>2xl:</code> classes found. Consider optimizing for large screens ≥1536px.</div>`);
-      if (allBp['xl'] === 0 && elements.length > 3) alerts.push(`<div class="alert alert-info"><i class="ti ti-info-circle"></i> No <code>xl:</code> classes found. Desktop-wide layouts (≥1280px) may not be optimized.</div>`);
       if (avgScore >= 80) alerts.push(`<div class="alert alert-success"><i class="ti ti-circle-check"></i> Overall responsive coverage looks great! Average score is ${avgScore}%.</div>`);
       alertsEl.innerHTML = alerts.join('');
 
@@ -523,7 +1417,7 @@
         const pct = Math.round(c / (totalBpCls || 1) * 100);
         const w = Math.round(c / maxBp * 100);
         return `<div class="bar-item">
-          <div class="bar-label-row"><span class="bar-label">${bp}: <span style="color:var(--text-tertiary);font-family:var(--font-sans)">${BP_WIDTHS[bp]}+</span></span><span class="bar-count">${c} · ${pct}%</span></div>
+          <div class="bar-label-row"><span class="bar-label">${bp}: <span style="color:var(--text-tertiary);font-family:var(--font-sans)">${BP_WIDTHS[bp] || ''}+</span></span><span class="bar-count">${c} · ${pct}%</span></div>
           <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:#378ADD"></div></div>
         </div>`;
       }).join('');
@@ -538,13 +1432,89 @@
         </div>`;
       }).join('');
 
+      // --- Interactive State Audit Bars ---
+      const stateCounts = {};
+      STATE_PREFIXES.forEach(p => stateCounts[p] = 0);
+      let totalStateClasses = 0;
+      parsedData.forEach(el => {
+        STATE_PREFIXES.forEach(p => {
+          if (el.stateMap && el.stateMap[p]) {
+            stateCounts[p] += el.stateMap[p].length;
+            totalStateClasses += el.stateMap[p].length;
+          }
+        });
+      });
+      
+      const statesCard = document.getElementById('states-card');
+      if (totalStateClasses > 0) {
+        statesCard.style.display = 'block';
+        const maxState = Math.max(...Object.values(stateCounts), 1);
+        document.getElementById('states-bars').innerHTML = Object.entries(stateCounts)
+          .filter(([_, count]) => count > 0)
+          .map(([prefix, count]) => {
+            const pct = Math.round(count / totalStateClasses * 100);
+            const w = Math.round(count / maxState * 100);
+            return `<div class="bar-item">
+              <div class="bar-label-row"><span class="bar-label">${prefix}:</span><span class="bar-count">${count} · ${pct}%</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:#534AB7"></div></div>
+            </div>`;
+          }).join('');
+      } else {
+        statesCard.style.display = 'none';
+      }
+
+      // --- Class Conflict Warnings ---
+      const allConflicts = [];
+      parsedData.forEach(el => {
+        const conflicts = detectConflicts(el);
+        conflicts.forEach(c => {
+          allConflicts.push({
+            line: el.line,
+            tag: el.tag,
+            bp: c.bp,
+            classes: c.classes
+          });
+        });
+      });
+      
+      const conflictCard = document.getElementById('conflict-card');
+      const conflictList = document.getElementById('conflict-list');
+      if (allConflicts.length > 0) {
+        conflictCard.style.display = 'block';
+        conflictList.innerHTML = allConflicts.map(c => `
+          <div class="conflict-item">
+            <span>Line <strong>${c.line}</strong>: <code>&lt;${c.tag}&gt;</code> contains conflicting classes at <strong>${c.bp}</strong>:</span>
+            <span class="conflict-badge">${c.classes.join(' vs ')}</span>
+          </div>
+        `).join('');
+      } else {
+        conflictCard.style.display = 'none';
+      }
+
+      // --- Accessibility warnings audit triggers (Feature 9) ---
+      const a11yWarnings = runA11yAudit(parsedData);
+      const a11yCard = document.getElementById('a11y-card');
+      const a11yList = document.getElementById('a11y-list');
+      if (a11yWarnings.length > 0) {
+        a11yCard.style.display = 'block';
+        a11yList.innerHTML = a11yWarnings.map(w => `
+          <div class="a11y-item">
+            <span class="a11y-badge ${w.type}">${w.type}</span>
+            <span>Line <strong>${w.line}</strong>: <code>&lt;${w.tag}&gt;</code> — ${w.msg}</span>
+          </div>
+        `).join('');
+      } else {
+        a11yCard.style.display = 'none';
+      }
+
       renderHeatmap();
       renderGaps();
       renderFixes();
       showResults();
     }
 
-    /* ---- Heatmap render (with filter/sort) ---- */
+    // --- Heatmap render layout (Feature 10: Performance Guard lazy/chunked rendering) ---
+    let renderTimeout = null;
     function renderHeatmap() {
       if (!parsedData.length) return;
       const filter = document.getElementById('filter-sel').value;
@@ -570,53 +1540,84 @@
 
       document.getElementById('visible-count').textContent = `${data.length} element${data.length !== 1?'s':''}`;
 
+      const container = document.getElementById('heatmap-rows');
+      container.innerHTML = '';
+      
       if (!data.length) {
-        document.getElementById('heatmap-rows').innerHTML = `<tr><td colspan="9" style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:13px">No elements match this filter.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="${BPS.length + 4}" style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:13px">No elements match this filter.</td></tr>`;
         return;
       }
 
-      document.getElementById('heatmap-rows').innerHTML = data.map(el => {
-        const elMax = BPS.reduce((s,bp) => s + el.bpMap[bp].length, 0);
-        const cells = BPS.map(bp => {
-          const cnt = el.bpMap[bp].length;
-          const c = heatColor(cnt, Math.max(elMax,1));
-          const title = cnt > 0 ? el.bpMap[bp].join(', ') : '(none)';
-          return `<td><div class="heat-cell ${cnt>0?'has-classes':''}" style="background:${c.bg};color:${c.text}"
-            onmouseenter="showTip(event,'${bp}: ${title.replace(/'/g,"&#39;")}')"
-            onmouseleave="hideTip()">${cnt||''}</div></td>`;
+      const chunkSize = 150;
+      let currentIndex = 0;
+
+      if (renderTimeout) clearTimeout(renderTimeout);
+
+      function renderChunk() {
+        const chunk = data.slice(currentIndex, currentIndex + chunkSize);
+        const chunkHtml = chunk.map(el => {
+          const elMax = BPS.reduce((s,bp) => s + el.bpMap[bp].length, 0);
+          const cells = BPS.map(bp => {
+            const cnt = el.bpMap[bp].length;
+            const c = heatColor(cnt, Math.max(elMax,1));
+            const title = cnt > 0 ? el.bpMap[bp].join(', ') : '(none)';
+            return `<td><div class="heat-cell ${cnt>0?'has-classes':''}" style="background:${c.bg};color:${c.text}"
+              onmouseenter="showTip(event,'${bp}: ${title.replace(/'/g,"&#39;")}')"
+              onmouseleave="hideTip()">${cnt||''}</div></td>`;
+          }).join('');
+          const bc = heatColor(el.base.length, Math.max(el.classes.length,1));
+          const sc = el.score;
+          const scColor = sc >= 80 ? '#1D9E75' : sc >= 50 ? '#BA7517' : '#E24B4A';
+          const rowId = `row-${el.idx}`;
+          const detailId = `detail-${el.idx}`;
+          
+          let deltaHtml = '';
+          if (isComparisonMode && parsedDataA[el.idx]) {
+            const diff = el.score - parsedDataA[el.idx].score;
+            if (diff > 0) {
+              deltaHtml = `<span style="font-size:9px; color:var(--text-success); font-weight:bold; margin-left:4px;">(+${diff})</span>`;
+            } else if (diff < 0) {
+              deltaHtml = `<span style="font-size:9px; color:var(--text-danger); font-weight:bold; margin-left:4px;">(${diff})</span>`;
+            }
+          }
+          
+          return `<tr id="${rowId}">
+            <td>
+              <div class="el-label" title="${el.raw.replace(/"/g,'&quot;')}">
+                <span class="line-num">L${el.line}</span>
+                <span style="color:var(--text-tertiary)">&lt;</span>${el.tag}<span style="color:var(--text-tertiary)">&gt;</span>
+              </div>
+            </td>
+            ${cells}
+            <td><div class="heat-cell" style="background:${bc.bg};color:${bc.text}"
+              onmouseenter="showTip(event,'base: ${el.base.slice(0,5).join(', ')}${el.base.length>5?'…':''}')"
+              onmouseleave="hideTip()">${el.base.length||''}</div></td>
+            <td class="score-col">
+              <div class="score-bar-wrap">
+                <div class="score-bar-track"><div class="score-bar-fill" style="width:${sc}%;background:${scColor}"></div></div>
+                <span class="score-label">${sc}%${deltaHtml}</span>
+              </div>
+            </td>
+            <td><button class="expand-btn" onclick="toggleDetail(${el.idx})" title="Expand detail" aria-label="Toggle detail for element ${el.idx}"><i class="ti ti-chevron-down" id="chevron-${el.idx}"></i></button></td>
+          </tr>
+          <tr class="detail-row" id="${detailId}">
+            <td colspan="${BPS.length + 4}">
+              <div class="detail-inner">
+                ${renderDetailInner(el)}
+              </div>
+            </td>
+          </tr>`;
         }).join('');
-        const bc = heatColor(el.base.length, Math.max(el.classes.length,1));
-        const sc = el.score;
-        const scColor = sc >= 80 ? '#1D9E75' : sc >= 50 ? '#BA7517' : '#E24B4A';
-        const rowId = `row-${el.idx}`;
-        const detailId = `detail-${el.idx}`;
-        return `<tr id="${rowId}">
-          <td>
-            <div class="el-label" title="${el.raw.replace(/"/g,'&quot;')}">
-              <span class="line-num">L${el.line}</span>
-              <span style="color:var(--text-tertiary)">&lt;</span>${el.tag}<span style="color:var(--text-tertiary)">&gt;</span>
-            </div>
-          </td>
-          ${cells}
-          <td><div class="heat-cell" style="background:${bc.bg};color:${bc.text}"
-            onmouseenter="showTip(event,'base: ${el.base.slice(0,5).join(', ')}${el.base.length>5?'…':''}')"
-            onmouseleave="hideTip()">${el.base.length||''}</div></td>
-          <td class="score-col">
-            <div class="score-bar-wrap">
-              <div class="score-bar-track"><div class="score-bar-fill" style="width:${sc}%;background:${scColor}"></div></div>
-              <span class="score-label">${sc}%</span>
-            </div>
-          </td>
-          <td><button class="expand-btn" onclick="toggleDetail(${el.idx})" title="Expand detail" aria-label="Toggle detail for element ${el.idx}"><i class="ti ti-chevron-down" id="chevron-${el.idx}"></i></button></td>
-        </tr>
-        <tr class="detail-row" id="${detailId}">
-          <td colspan="9">
-            <div class="detail-inner">
-              ${renderDetailInner(el)}
-            </div>
-          </td>
-        </tr>`;
-      }).join('');
+
+        container.insertAdjacentHTML('beforeend', chunkHtml);
+        currentIndex += chunkSize;
+        
+        if (currentIndex < data.length) {
+          renderTimeout = setTimeout(renderChunk, 35);
+        }
+      }
+      
+      renderChunk();
     }
 
     function renderDetailInner(el) {
@@ -626,7 +1627,7 @@
           ? classes.map(c => `<span class="cls-chip">${bp}:${c}</span>`).join('')
           : `<span class="cls-chip missing">— none —</span>`;
         return `<div class="detail-bp-block">
-          <div class="detail-bp-label">${bp}: <span style="font-size:10px;font-weight:400">${BP_WIDTHS[bp]}+</span></div>
+          <div class="detail-bp-label">${bp}: <span style="font-size:10px;font-weight:400">${BP_WIDTHS[bp] || ''}</span></div>
           <div class="detail-cls-list">${chips}</div>
         </div>`;
       }).join('');
@@ -694,7 +1695,7 @@
     /* ---- Tooltip ---- */
     const tip = document.getElementById('tooltip');
     function showTip(e, text) {
-      tip.textContent = text;
+      tip.innerHTML = text;
       tip.classList.add('visible');
       moveTip(e);
     }
@@ -747,27 +1748,139 @@
       setTimeout(() => t.classList.remove('show'), 2200);
     }
 
-    /* ---- Drag & Drop ---- */
-    const dz = document.getElementById('drop-zone');
-    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-    dz.addEventListener('drop', e => {
-      e.preventDefault();
-      dz.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      const ext = file.name.split('.').pop().toLowerCase();
-      if (!['html','htm','jsx','tsx','vue','svelte'].includes(ext)) {
-        alert(`Unsupported file type: .${ext}\nSupported: .html .htm .jsx .tsx .vue .svelte`);
-        return;
+      if (!item) return;
+      
+      isComparisonMode = item.isCompare;
+      updateComparisonUI();
+      
+      if (isComparisonMode) {
+        document.getElementById('code-input-a').value = item.codeA || '';
+        document.getElementById('code-input-b').value = item.codeB || '';
+        handleEditorInput('a');
+        handleEditorInput('b');
+      } else {
+        document.getElementById('code-input').value = item.codeSingle || '';
+        handleEditorInput('single');
       }
-      const reader = new FileReader();
-      reader.onload = ev => {
-        document.getElementById('code-input').value = ev.target.result;
-        analyze();
+      
+      toggleHistory();
+      analyze();
+      toast('History entry restored!');
+    }
+
+    function clearHistory() {
+      historyList = [];
+      localStorage.removeItem('twbp-history');
+      renderHistory();
+      toast('History cleared!');
+    }
+
+    function toggleHistory() {
+      const drawer = document.getElementById('history-drawer');
+      drawer.classList.toggle('open');
+      if (drawer.classList.contains('open')) {
+        renderHistory();
+      }
+    }
+
+    // --- Share URL encoding/decoding hash (Feature 6) ---
+    function shareURL() {
+      const codeSingle = document.getElementById('code-input').value;
+      const codeA = document.getElementById('code-input-a').value;
+      const codeB = document.getElementById('code-input-b').value;
+      
+      const payload = {
+        isCompare: isComparisonMode,
+        codeSingle,
+        codeA,
+        codeB,
+        bps: BPS,
+        bpWidths: BP_WIDTHS
       };
-      reader.readAsText(file);
-    });
+      
+      try {
+        const json = JSON.stringify(payload);
+        const encoded = btoa(unescape(encodeURIComponent(json)));
+        const url = window.location.origin + window.location.pathname + '#' + encoded;
+        navigator.clipboard.writeText(url).then(() => {
+          toast('Share link copied to clipboard!');
+        }).catch(err => {
+          alert('Could not copy automatically. URL is:\n' + url);
+        });
+      } catch(e) {
+        toast('Error generating share link');
+      }
+    }
+
+    function checkHashLoad() {
+      const hash = window.location.hash.substring(1);
+      if (!hash) return;
+      try {
+        const json = decodeURIComponent(escape(atob(hash)));
+        const payload = JSON.parse(json);
+        
+        if (payload.bps && payload.bpWidths) {
+          BPS = payload.bps;
+          BP_WIDTHS = payload.bpWidths;
+          localStorage.setItem('twbp-custom-bps', JSON.stringify(BPS));
+          localStorage.setItem('twbp-custom-bp-widths', JSON.stringify(BP_WIDTHS));
+          renderHeatmapHeader();
+        }
+        
+        isComparisonMode = !!payload.isCompare;
+        updateComparisonUI();
+        
+        if (isComparisonMode) {
+          document.getElementById('code-input-a').value = payload.codeA || '';
+          document.getElementById('code-input-b').value = payload.codeB || '';
+          handleEditorInput('a');
+          handleEditorInput('b');
+        } else {
+          document.getElementById('code-input').value = payload.codeSingle || '';
+          handleEditorInput('single');
+        }
+        
+        analyze();
+        toast('Shared analysis loaded!');
+        window.location.hash = ''; // clear hash
+      } catch(e) {
+        console.error('Error loading hash payload', e);
+      }
+    }
+
+    // --- Drag & Drop listeners setup ---
+    function setupDragAndDrop(dropZoneId, textareaId, id) {
+      const dz = document.getElementById(dropZoneId);
+      if (!dz) return;
+      dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+      dz.addEventListener('drop', e => {
+        e.preventDefault();
+        dz.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['html','htm','jsx','tsx','vue','svelte'].includes(ext)) {
+          alert(`Unsupported file type: .${ext}\nSupported: .html .htm .jsx .tsx .vue .svelte`);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = ev => {
+          document.getElementById(textareaId).value = ev.target.result;
+          handleEditorInput(id);
+          analyze();
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    setupDragAndDrop('drop-zone', 'code-input', 'single');
+    setupDragAndDrop('drop-zone-a', 'code-input-a', 'a');
+    setupDragAndDrop('drop-zone-b', 'code-input-b', 'b');
+
+    setupEditorSupport('code-input', 'single');
+    setupEditorSupport('code-input-a', 'a');
+    setupEditorSupport('code-input-b', 'b');
 
     /* ---- Helpers ---- */
     function showResults() {
@@ -776,20 +1889,36 @@
     }
 
     function loadSample() {
-      document.getElementById('code-input').value = SAMPLE;
+      if (isComparisonMode) {
+        loadSampleA();
+        loadSampleB();
+      } else {
+        document.getElementById('code-input').value = SAMPLE;
+        handleEditorInput('single');
+      }
       analyze();
     }
 
     function clearAll() {
       document.getElementById('code-input').value = '';
+      document.getElementById('code-input-a').value = '';
+      document.getElementById('code-input-b').value = '';
+      handleEditorInput('single');
+      handleEditorInput('a');
+      handleEditorInput('b');
       parsedData = [];
+      parsedDataA = [];
+      parsedDataB = [];
       document.getElementById('results').style.display = 'none';
       document.getElementById('empty-state').style.display = 'block';
     }
 
-    document.getElementById('code-input').addEventListener('keydown', e => {
+    document.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze();
     });
+
+    // Check share link on page load
+    window.addEventListener('load', checkHashLoad);
   </script>
 </body>
 </html>
