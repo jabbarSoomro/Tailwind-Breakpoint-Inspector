@@ -261,8 +261,8 @@
 
     /* --- Settings Custom Breakpoint Layout (Feature 7) --- */
     .settings-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       gap: 12px;
       margin-bottom: 16px;
     }
@@ -456,7 +456,9 @@
       <div class="settings-grid" id="settings-breakpoint-grid">
         <!-- Generated Dynamically -->
       </div>
-      <div class="btn-row" style="margin-top:4px;">
+      <div class="btn-row" style="margin-top:4px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <button class="btn-sm" onclick="addBreakpointRow()"><i class="ti ti-plus"></i> Add Breakpoint</button>
+        <div style="flex:1; min-width:10px;"></div>
         <button class="btn-primary btn-sm" onclick="saveCustomBreakpoints()"><i class="ti ti-device-floppy"></i> Save & Apply</button>
         <button class="btn-sm" onclick="resetCustomBreakpoints()"><i class="ti ti-refresh"></i> Reset to Tailwind Defaults</button>
       </div>
@@ -671,6 +673,13 @@
     let parsedDataB = [];
     let isComparisonMode = false;
     let darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let historyList = [];
+    try {
+      const histRaw = localStorage.getItem('twbp-history');
+      if (histRaw) historyList = JSON.parse(histRaw);
+    } catch (e) {
+      console.error('Failed to load history', e);
+    }
     
     applyTheme();
 
@@ -773,25 +782,41 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 
-      // Highlight attributes and tailwind classes
-      html = html.replace(/(class(?:Name)?\s*=\s*["'`])([^"'`]*)(["'`])/gi, (match, prefix, classVal, suffix) => {
-        const highlightedClasses = classVal.split(/\s+/).map(cls => {
-          let foundBp = false;
-          for (const bp of BPS) {
-            if (cls.startsWith(bp + ':')) {
-              foundBp = true;
-              return `<span class="hl-bp">${bp}:</span>${cls.slice(bp.length + 1)}`;
+      // Highlight tags and their attributes safely
+      html = html.replace(/&lt;(\/?[a-zA-Z][a-zA-Z0-9:.-]*)([\s\S]*?)&gt;/g, (match, tagName, attrs) => {
+        let highlightedAttrs = '';
+        let lastIndex = 0;
+        const attrRegex = /(\s+([^\s=/>"'`]+))(?:\s*=\s*(["'])([\s\S]*?)\3)?/gi;
+        let m;
+        while ((m = attrRegex.exec(attrs)) !== null) {
+          const name = m[2];
+          const quote = m[3];
+          const value = m[4];
+          
+          const highlightedName = `<span class="hl-attr">${name}</span>`;
+          let highlightedValue = '';
+          if (quote !== undefined) {
+            if (name.toLowerCase() === 'class' || name.toLowerCase() === 'classname') {
+              const highlightedClasses = value.split(/\s+/).map(cls => {
+                for (const bp of BPS) {
+                  if (cls.startsWith(bp + ':')) {
+                    return `<span class="hl-bp">${bp}:</span>${cls.slice(bp.length + 1)}`;
+                  }
+                }
+                return cls;
+              }).join(' ');
+              highlightedValue = `=<span class="hl-val">${quote}${highlightedClasses}${quote}</span>`;
+            } else {
+              highlightedValue = `=${quote}${value}${quote}`;
             }
           }
-          return cls;
-        }).join(' ');
-        return `${prefix}<span class="hl-val">${highlightedClasses}</span>${suffix}`;
+          highlightedAttrs += attrs.substring(lastIndex, m.index) + m[1].replace(name, highlightedName) + highlightedValue;
+          lastIndex = attrRegex.lastIndex;
+        }
+        highlightedAttrs += attrs.substring(lastIndex);
+        return `<span class="hl-tag">&lt;${tagName}</span>${highlightedAttrs}&gt;`;
       });
 
-      // HTML Tag highlighting
-      html = html.replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9-]*)/gi, '<span class="hl-tag">$1</span>');
-      // Attributes highlighting
-      html = html.replace(/(\s+[a-zA-Z0-9-]+)(?=\s*=)/gi, ' <span class="hl-attr">$1</span>');
       return html;
     }
 
@@ -836,18 +861,13 @@
       if (!grid) return;
       
       let html = BPS.map((bp, idx) => `
-        <div class="settings-row" style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+        <div class="settings-row" style="display:flex; gap:8px; align-items:center;">
           <input type="text" class="settings-input" style="width:70px;" placeholder="Name" value="${bp}" id="bp-name-${idx}">
           <input type="text" class="settings-input" style="width:100px;" placeholder="Width (e.g. 640px)" value="${BP_WIDTHS[bp] || ''}" id="bp-width-${idx}">
           <button class="btn-sm btn-icon" onclick="removeBreakpointRow(${idx})" title="Delete"><i class="ti ti-trash"></i></button>
         </div>
       `).join('');
       
-      html += `
-        <div style="margin-top:8px;">
-          <button class="btn-sm" onclick="addBreakpointRow()"><i class="ti ti-plus"></i> Add Breakpoint</button>
-        </div>
-      `;
       grid.innerHTML = html;
     }
 
@@ -1094,11 +1114,6 @@
           score: coverageScore(bpMap, base),
           idx
         };
-      });
-    }
-
-
-
       });
     }
 
@@ -1748,6 +1763,8 @@
       setTimeout(() => t.classList.remove('show'), 2200);
     }
 
+    function loadHistoryItem(id) {
+      const item = historyList.find(h => h.id === id);
       if (!item) return;
       
       isComparisonMode = item.isCompare;
